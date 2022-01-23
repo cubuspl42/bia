@@ -4,6 +4,8 @@ lexer grammar BiaLexer;
 If                      : 'if' ;
 Then                    : 'then' ;
 Else                    : 'else' ;
+Val                     : 'val' ;
+Return                  : 'return' ;
 
 // Literals
 IntLiteral              : '0'|[1-9][0-9]* ;
@@ -12,8 +14,10 @@ IntLiteral              : '0'|[1-9][0-9]* ;
 Plus                    : '+' ;
 Multiplication          : '*' ;
 Equals                  : '==' ;
+Assign                  : '=' ;
 
 // Other
-Whitespace              : ' ' -> skip ;
+Whitespace              : (' ' | '\n') -> skip ;
+Identifier              : [a-z]+ ;
 LeftParen               : '(' ;
 RightParen              : ')' ;

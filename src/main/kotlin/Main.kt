@@ -4,7 +4,13 @@ import bia.BiaParserBaseVisitor
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 
-const val source = "if 0 == 0 then 42 else 43"
+const val source = """
+    val a = 10
+    val b = a + 20
+    val c = 15 * 2
+    val d = b == c
+    return if d then 11 else 22
+"""
 
 const val sourceName = "<main>"
 
@@ -19,7 +25,13 @@ data class NumberValue(val value: Double) : Value
 
 data class BooleanValue(val value: Boolean) : Value
 
-class Visitor : BiaParserBaseVisitor<Value>() {
+data class Scope(
+    val values: Map<String, Value>,
+)
+
+class ScopedVisitor(
+    private val scope: Scope,
+) : BiaParserBaseVisitor<Value>() {
     companion object {
         private fun asNumberValue(value: Value, message: String): NumberValue =
             value as? NumberValue ?: throw UnsupportedOperationException("$message: $value")
@@ -27,9 +39,6 @@ class Visitor : BiaParserBaseVisitor<Value>() {
         private fun asBooleanValue(value: Value, message: String): BooleanValue =
             value as? BooleanValue ?: throw UnsupportedOperationException("$message: $value")
     }
-
-    override fun visitProgram(ctx: BiaParser.ProgramContext): Value =
-        visit(ctx.root)
 
     override fun visitIntLiteral(ctx: BiaParser.IntLiteralContext): Value =
         NumberValue(
@@ -88,6 +97,52 @@ class Visitor : BiaParserBaseVisitor<Value>() {
 
         return if (guardValue.value) ifTrueValue
         else ifFalseValue
+    }
+
+    override fun visitReference(ctx: BiaParser.ReferenceContext): Value {
+        val valueName = ctx.Identifier().text
+
+        return scope.values[valueName] ?: throw UnsupportedOperationException("Unresolved reference: $valueName")
+    }
+}
+
+class Visitor : BiaParserBaseVisitor<Value>() {
+    companion object {
+        private fun evaluateExpression(
+            scope: Scope,
+            expression: BiaParser.ExpressionContext,
+        ): Value = ScopedVisitor(scope = scope).visit(expression)
+
+        private fun evaluateDeclaration(
+            scope: Scope,
+            declaration: BiaParser.DeclarationContext,
+        ): Scope {
+            val valueName = declaration.identifier.text
+
+            val value = evaluateExpression(
+                scope = scope,
+                expression = declaration.expression(),
+            )
+
+            return Scope(
+                values = scope.values + (valueName to value)
+            )
+        }
+    }
+
+    override fun visitProgram(ctx: BiaParser.ProgramContext): Value {
+        val initialScope = Scope(values = emptyMap())
+
+        val finalScope = ctx.declaration().fold(initialScope) { scope, declaration ->
+            evaluateDeclaration(scope = scope, declaration = declaration)
+        }
+
+        val returnValue = evaluateExpression(
+            scope = finalScope,
+            expression = ctx.return_().expression(),
+        )
+
+        return returnValue
     }
 }
 
