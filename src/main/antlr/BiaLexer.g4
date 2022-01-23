@@ -1,5 +1,10 @@
 lexer grammar BiaLexer;
 
+// Keywords
+If                      : 'if' ;
+Then                    : 'then' ;
+Else                    : 'else' ;
+
 // Literals
 IntLiteral              : '0'|[1-9][0-9]* ;
 

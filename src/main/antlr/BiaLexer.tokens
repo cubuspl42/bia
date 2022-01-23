@@ -1,0 +1,19 @@
+If=1
+Then=2
+Else=3
+IntLiteral=4
+Plus=5
+Multiplication=6
+Equals=7
+Whitespace=8
+LeftParen=9
+RightParen=10
+'if'=1
+'then'=2
+'else'=3
+'+'=5
+'*'=6
+'=='=7
+' '=8
+'('=9
+')'=10

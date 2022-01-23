@@ -3,9 +3,8 @@ import bia.BiaParser
 import bia.BiaParserBaseVisitor
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
-import java.lang.IllegalArgumentException
 
-const val source = "(1 == 1) == (2 == 3)"
+const val source = "if 0 == 0 then 42 else 43"
 
 const val sourceName = "<main>"
 
@@ -21,6 +20,14 @@ data class NumberValue(val value: Double) : Value
 data class BooleanValue(val value: Boolean) : Value
 
 class Visitor : BiaParserBaseVisitor<Value>() {
+    companion object {
+        private fun asNumberValue(value: Value, message: String): NumberValue =
+            value as? NumberValue ?: throw UnsupportedOperationException("$message: $value")
+
+        private fun asBooleanValue(value: Value, message: String): BooleanValue =
+            value as? BooleanValue ?: throw UnsupportedOperationException("$message: $value")
+    }
+
     override fun visitProgram(ctx: BiaParser.ProgramContext): Value =
         visit(ctx.root)
 
@@ -33,10 +40,13 @@ class Visitor : BiaParserBaseVisitor<Value>() {
         val leftValue = visit(ctx.left)
         val rightValue = visit(ctx.right)
 
-        val leftNumber = visit(ctx.left) as? NumberValue
-            ?: throw UnsupportedOperationException("Cannot perform mathematical operations on non-number: $leftValue")
-        val rightNumber = visit(ctx.right) as? NumberValue
-            ?: throw UnsupportedOperationException("Cannot perform mathematical operations on non-number: $rightValue")
+        fun asOperandValue(value: Value) = asNumberValue(
+            value = value,
+            message = "Cannot perform mathematical operations on non-number",
+        )
+
+        val leftNumber = asOperandValue(value = leftValue)
+        val rightNumber = asOperandValue(value = rightValue)
 
         val operator = ctx.operator
 
@@ -70,6 +80,15 @@ class Visitor : BiaParserBaseVisitor<Value>() {
 
     override fun visitParenExpression(ctx: BiaParser.ParenExpressionContext): Value =
         visit(ctx.expression())
+
+    override fun visitIfExpression(ctx: BiaParser.IfExpressionContext): Value {
+        val guardValue = asBooleanValue(value = visit(ctx.guard), "Guard has to be a boolean")
+        val ifTrueValue = visit(ctx.ifTrue)
+        val ifFalseValue = visit(ctx.ifFalse)
+
+        return if (guardValue.value) ifTrueValue
+        else ifFalseValue
+    }
 }
 
 fun main() {
