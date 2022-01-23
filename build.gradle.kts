@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     kotlin("jvm") version "1.6.10"
+    antlr
     application
 }
 
@@ -13,6 +14,7 @@ repositories {
 }
 
 dependencies {
+    antlr("org.antlr:antlr4:4.9.3")
     testImplementation(kotlin("test"))
 }
 
@@ -22,6 +24,12 @@ tasks.test {
 
 tasks.withType<KotlinCompile>() {
     kotlinOptions.jvmTarget = "1.8"
+}
+
+tasks.generateGrammarSource {
+    maxHeapSize = "64m"
+    arguments = arguments + listOf("-package", "bia")
+    outputDirectory = File("${project.buildDir}/generated-src/antlr/main/bia")
 }
 
 application {
