@@ -4,5 +4,7 @@ options { tokenVocab = BiaLexer; }
 
 program : root=expression EOF ;
 
-expression : left=expression PLUS right=expression # binaryOperation
-           | INTLIT # intLiteral ;
+expression : left=expression operator=Multiplication right=expression # binaryOperation
+           | left=expression operator=Plus right=expression # binaryOperation
+           | LeftParen expression RightParen # parenExpression
+           | IntLiteral # intLiteral ;

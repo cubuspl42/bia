@@ -1,10 +1,13 @@
 lexer grammar BiaLexer;
 
 // Literals
-INTLIT              : '0'|[1-9][0-9]* ;
+IntLiteral              : '0'|[1-9][0-9]* ;
 
 // Operators
-PLUS                : '+' ;
+Plus                    : '+' ;
+Multiplication          : '*' ;
 
 // Other
-WHITESPACE          : ' ' -> skip ;
+Whitespace              : ' ' -> skip ;
+LeftParen               : '(' ;
+RightParen              : ')' ;

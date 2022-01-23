@@ -4,7 +4,7 @@ import bia.BiaParserBaseVisitor
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 
-const val source = "12 + 13"
+const val source = "(12 * 13) * 2"
 
 const val sourceName = "<main>"
 
@@ -18,10 +18,23 @@ class Visitor : BiaParserBaseVisitor<Double>() {
         visit(ctx.root)
 
     override fun visitIntLiteral(ctx: BiaParser.IntLiteralContext): Double =
-        ctx.INTLIT().text.toInt(radix = 10).toDouble()
+        ctx.IntLiteral().text.toInt(radix = 10).toDouble()
 
-    override fun visitBinaryOperation(ctx: BiaParser.BinaryOperationContext): Double =
-        visit(ctx.left) + visit(ctx.right)
+    override fun visitBinaryOperation(ctx: BiaParser.BinaryOperationContext): Double {
+        val leftValue = visit(ctx.left)
+        val rightValue = visit(ctx.right)
+
+        val operator = ctx.operator
+
+        return when (operator.type) {
+            BiaLexer.Plus -> leftValue + rightValue
+            BiaLexer.Multiplication -> leftValue * rightValue
+            else -> throw UnsupportedOperationException("Unrecognized operator: ${operator.text}")
+        }
+    }
+
+    override fun visitParenExpression(ctx: BiaParser.ParenExpressionContext): Double =
+        visit(ctx.expression())
 }
 
 fun main() {
