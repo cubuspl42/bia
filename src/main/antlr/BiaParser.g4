@@ -6,14 +6,15 @@ program : body EOF ;
 
 expression : left=expression operator=Multiplication right=expression # binaryOperation
            | left=expression operator=Plus right=expression # binaryOperation
+           | left=expression operator=Minus right=expression # binaryOperation
            | left=expression operator=Equals right=expression # equalsOperation
            | LeftParen expression RightParen # parenExpression
-           | If guard=expression Then ifTrue=expression Else ifFalse=expression # ifExpression
+           | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
            | callee=expression LeftParen argument=expression RightParen # callExpression
            | IntLiteral # intLiteral
            | Identifier # reference ;
 
-valueDeclaration : Val identifier=Identifier Assign expression ;
+valueDeclaration : Val name=Identifier Assign initializer=expression ;
 
 functionDeclaration : Def name=Identifier LeftParen argument=Identifier RightParen LeftBrace body RightBrace ;
 
