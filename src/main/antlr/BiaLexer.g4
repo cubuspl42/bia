@@ -6,6 +6,7 @@ Then                    : 'then' ;
 Else                    : 'else' ;
 Val                     : 'val' ;
 Return                  : 'return' ;
+Def                     : 'def' ;
 
 // Literals
 IntLiteral              : '0'|[1-9][0-9]* ;
@@ -21,3 +22,5 @@ Whitespace              : (' ' | '\n') -> skip ;
 Identifier              : [a-z]+ ;
 LeftParen               : '(' ;
 RightParen              : ')' ;
+LeftBrace               : '{' ;
+RightBrace              : '}' ;
