@@ -28,8 +28,8 @@ tasks.withType<KotlinCompile>() {
 
 tasks.generateGrammarSource {
     maxHeapSize = "64m"
-    arguments = arguments + listOf("-package", "bia", "-visitor", "-no-listener")
-    outputDirectory = File("${project.buildDir}/generated-src/antlr/main/bia")
+    arguments = arguments + listOf("-package", "bia.parser.antlr", "-visitor", "-no-listener")
+    outputDirectory = File("${project.buildDir}/generated-src/antlr/main/bia/parser/antlr")
 }
 
 application {

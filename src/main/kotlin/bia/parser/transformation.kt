@@ -1,8 +1,5 @@
 package bia.parser
 
-import bia.BiaLexer
-import bia.BiaParser
-import bia.BiaParserBaseVisitor
 import bia.model.AdditionExpression
 import bia.model.CallExpression
 import bia.model.Declaration
@@ -17,6 +14,9 @@ import bia.model.MultiplicationExpression
 import bia.model.ReferenceExpression
 import bia.model.SubtractionExpression
 import bia.model.ValueDeclaration
+import bia.parser.antlr.BiaLexer
+import bia.parser.antlr.BiaParser
+import bia.parser.antlr.BiaParserBaseVisitor
 
 fun transformProgram(
     parser: BiaParser,

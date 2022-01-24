@@ -1,8 +1,8 @@
 package bia.parser
 
-import bia.BiaLexer
-import bia.BiaParser
 import bia.model.FunctionBody
+import bia.parser.antlr.BiaLexer
+import bia.parser.antlr.BiaParser
 import org.antlr.v4.runtime.CharStreams
 import org.antlr.v4.runtime.CommonTokenStream
 
