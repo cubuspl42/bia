@@ -20,6 +20,6 @@ functionDeclaration : Def name=Identifier LeftParen argument=Identifier RightPar
 
 declaration : valueDeclaration | functionDeclaration ;
 
-body : declaration+ return_ ;
+body : declaration* return_ ;
 
 return_ : Return expression ;

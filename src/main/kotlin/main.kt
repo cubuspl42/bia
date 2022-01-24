@@ -10,11 +10,18 @@ const val source = """
     
     def f(x) {
         val a = x * 2
-        val b = a + 10
-        return b
+        val b = a + 3
+        
+        def g(y) {
+            return a + b + y
+        }
+        
+        return g
     }
     
-    return if d then f(7) else 22
+    val h = f(1)
+    
+    return h(2)
 """
 
 const val sourceName = "<main>"
