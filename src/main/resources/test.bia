@@ -1,0 +1,19 @@
+val a = 10
+val b = a + 20
+val c = 15 * 2
+val d = b == c
+
+def f(x) {
+    val a = x * 2
+    val b = a + 3
+
+    def g(y) {
+        return a + b + y
+    }
+
+    return g
+}
+
+val h = f(1)
+
+return h(4)
