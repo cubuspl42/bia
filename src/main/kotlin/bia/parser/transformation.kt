@@ -1,6 +1,7 @@
 package bia.parser
 
 import bia.model.AdditionExpression
+import bia.model.AndExpression
 import bia.model.CallExpression
 import bia.model.Declaration
 import bia.model.EqualsExpression
@@ -13,6 +14,7 @@ import bia.model.IfExpression
 import bia.model.IntLiteralExpression
 import bia.model.LessThenExpression
 import bia.model.MultiplicationExpression
+import bia.model.NotExpression
 import bia.model.OrExpression
 import bia.model.ReferenceExpression
 import bia.model.ReminderExpression
@@ -82,7 +84,7 @@ fun transformExpression(
 
     override fun visitIntLiteral(ctx: BiaParser.IntLiteralContext): Expression =
         IntLiteralExpression(
-            value = ctx.IntLiteral().text.toInt(radix = 10),
+            value = ctx.IntLiteral().text.toLong(radix = 10),
         )
 
     override fun visitParenExpression(ctx: BiaParser.ParenExpressionContext): Expression =
@@ -102,8 +104,20 @@ fun transformExpression(
             BiaLexer.Multiplication -> MultiplicationExpression(left, right)
             BiaLexer.Reminder -> ReminderExpression(left, right)
             BiaLexer.Or -> OrExpression(left, right)
+            BiaLexer.And -> AndExpression(left, right)
             BiaLexer.Lt -> LessThenExpression(left, right)
             BiaLexer.Gt -> GreaterThenExpression(left, right)
+            else -> throw UnsupportedOperationException("Unrecognized operator: ${operator.text}")
+        }
+    }
+
+    override fun visitUnaryOperation(ctx: BiaParser.UnaryOperationContext): Expression {
+        val argument = transformExpression(expression = ctx.expression())
+
+        val operator = ctx.operator
+
+        return when (operator.type) {
+            BiaLexer.Not -> NotExpression(argument)
             else -> throw UnsupportedOperationException("Unrecognized operator: ${operator.text}")
         }
     }

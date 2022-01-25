@@ -10,6 +10,7 @@ import bia.model.asFunctionValue
 import bia.model.asListValue
 import bia.model.asNumberValue
 import bia.model.asSequenceValue
+import kotlin.math.sqrt
 
 private val until = object : FunctionValue() {
     override fun call(arguments: List<Value>): Value {
@@ -17,7 +18,7 @@ private val until = object : FunctionValue() {
         val end = getArgument(arguments, 1) { asNumberValue() }
 
         return ListValue(
-            value = (start.value.toInt() until end.value.toInt()).map {
+            value = (start.value.toLong() until end.value.toLong()).map {
                 NumberValue(value = it.toDouble())
             }.toList(),
         )
@@ -32,6 +33,18 @@ private val filter = object : FunctionValue() {
         return ListValue(
             value = list.value.filter { callPredicate(predicate, it) },
         )
+    }
+}
+
+private val foldL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+        val initial = getArgument(arguments, 1)
+        val operation = getArgument(arguments, 2) { asFunctionValue() }
+
+        return list.value.fold(initial) { acc, value ->
+            operation.call(listOf(acc, value))
+        }
     }
 }
 
@@ -102,16 +115,28 @@ private val consLazy = object : FunctionValue() {
     }
 }
 
+private val sqrt = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val x = getArgument(arguments, 0) { asNumberValue() }
+
+        return NumberValue(
+            value = sqrt(x.value),
+        )
+    }
+}
+
 val builtinScope = Scope.of(
     values = mapOf(
         "until" to until,
         "filter" to filter,
+        "fold:L" to foldL,
         "filter:Sq" to filterSq,
         "seqOf" to seqOf,
         "takeWhile:Sq" to takeWhileSq,
         "sum:Sq" to sumSq,
         "concat:Sq" to concatSq,
         "consLazy" to consLazy,
+        "sqrt" to sqrt,
     ),
 )
 

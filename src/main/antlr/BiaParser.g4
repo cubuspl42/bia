@@ -9,8 +9,10 @@ expression : left=expression operator=Multiplication right=expression # binaryOp
            | left=expression operator=Plus right=expression # binaryOperation
            | left=expression operator=Minus right=expression # binaryOperation
            | left=expression operator=Or right=expression # binaryOperation
+           | left=expression operator=And right=expression # binaryOperation
            | left=expression operator=Lt right=expression # binaryOperation
            | left=expression operator=Gt right=expression # binaryOperation
+           | operator=Not expression # unaryOperation
            | left=expression operator=Equals right=expression # equalsOperation
            | LeftParen expression RightParen # parenExpression
            | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression

@@ -90,6 +90,30 @@ data class OrExpression(
         ) { a, b -> a || b }
 }
 
+data class AndExpression(
+    val left: Expression,
+    val right: Expression,
+) : Expression {
+    override fun evaluate(scope: Scope): Value =
+        evaluateLogicalBinaryExpression(
+            scope = scope,
+            left = left,
+            right = right,
+        ) { a, b -> a && b }
+}
+
+data class NotExpression(
+    val negated: Expression,
+) : Expression {
+    override fun evaluate(scope: Scope): Value {
+        val negatedBoolean = asLogicalValue(value = negated.evaluate(scope = scope))
+
+        return BooleanValue(
+            value = !negatedBoolean.value,
+        )
+    }
+}
+
 data class EqualsExpression(
     val left: Expression,
     val right: Expression,
@@ -132,7 +156,7 @@ data class CallExpression(
 }
 
 data class IntLiteralExpression(
-    val value: Int,
+    val value: Long,
 ) : Expression {
     override fun evaluate(scope: Scope): Value =
         NumberValue(

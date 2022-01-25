@@ -8,6 +8,8 @@ Val                     : 'val' ;
 Return                  : 'return' ;
 Def                     : 'def' ;
 Or                      : 'or' ;
+And                     : 'and' ;
+Not                     : 'not' ;
 
 // Literals
 IntLiteral              : '0'|[1-9][0-9]* ;
@@ -20,7 +22,7 @@ Reminder                : '%' ;
 Equals                  : '==' ;
 Assign                  : '=' ;
 Lt                      : '<' ;
-Gt                      : '<' ;
+Gt                      : '>' ;
 
 // Other
 Whitespace              : (' ' | '\n') -> skip ;

@@ -1,0 +1,36 @@
+// The prime factors of 13195 are 5, 7, 13 and 29.
+// What is the largest prime factor of the number 600 851 475 143 ?
+
+val N = 600851475143
+
+def filterOutMultiplesOf(l, n) {
+    def isMultiple(i) {
+        return (i > n) and (i % n == 0)
+    }
+
+    def isNotMultiple(i) {
+        return (not (isMultiple(i)))
+    }
+
+    return filter(l, isNotMultiple)
+}
+
+// O(n * sqrt(n))
+def buildPrimesBelow(n) {
+    def accumulate(l, i) {
+        return filterOutMultiplesOf(l, i)
+    }
+
+    return fold:L(until(2, sqrt(n)), until(1, n), accumulate)
+}
+
+// O(sqrt(N) * sqrt(sqrt(N)))
+val primesBelowSqrtN = buildPrimesBelow(sqrt(N))
+
+def isFactorOfN(m) {
+    return N % m == 0
+}
+
+val primeFactorsOfN = filter(primesBelowSqrtN, isFactorOfN)
+
+return primeFactorsOfN
