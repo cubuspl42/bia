@@ -1,0 +1,29 @@
+def calcFibSeqFrom(a, b) {
+    val c = a + b
+
+    def buildTail() {
+        return calcFibSeqFrom(b, c)
+    }
+
+    return consLazy(c, buildTail)
+}
+
+def calcFibSeq() {
+    return concat:Sq(seqOf(1, 2), calcFibSeqFrom(1, 2))
+}
+
+def isSmall(n) {
+    return n < 4000000
+}
+
+val smallFibs = takeWhile:Sq(calcFibSeq(), isSmall)
+
+def isEven(n) {
+    return n % 2 == 0
+}
+
+val smallEvenFibs = filter:Sq(smallFibs, isEven)
+
+val sumOfSmallEvenFibs = sum:Sq(smallEvenFibs)
+
+return sumOfSmallEvenFibs

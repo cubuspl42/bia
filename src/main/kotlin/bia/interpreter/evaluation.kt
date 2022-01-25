@@ -38,19 +38,42 @@ fun evaluateBody(
 private fun executeDeclaration(
     scope: Scope,
     declaration: Declaration,
+): Scope = when (declaration) {
+    is ValueDeclaration -> executeValueDeclaration(
+        scope = scope,
+        declaration = declaration,
+    )
+    is FunctionDeclaration -> executeFunctionDeclaration(
+        scope = scope,
+        declaration = declaration,
+    )
+}
+
+private fun executeValueDeclaration(
+    scope: Scope,
+    declaration: ValueDeclaration,
 ): Scope = scope.extend(
     name = declaration.givenName,
-    value = when (declaration) {
-        is ValueDeclaration -> evaluateExpression(
-            scope = scope,
-            expression = declaration.initializer,
-        )
-        is FunctionDeclaration -> DefinedFunctionValue(
-            closure = scope,
-            definition = declaration.definition,
-        )
-    },
+    value = evaluateExpression(
+        scope = scope,
+        expression = declaration.initializer,
+    ),
 )
+
+private fun executeFunctionDeclaration(
+    scope: Scope,
+    declaration: FunctionDeclaration,
+): Scope = object {
+    val resultScope: Scope by lazy {
+        scope.extend(
+            name = declaration.givenName,
+            value = DefinedFunctionValue(
+                closure = Scope.delegated { resultScope },
+                definition = declaration.definition,
+            ),
+        )
+    }
+}.resultScope
 
 private fun evaluateExpression(
     scope: Scope,

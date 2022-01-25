@@ -54,6 +54,30 @@ data class ReminderExpression(
         ) { a, b -> a % b }
 }
 
+data class LessThenExpression(
+    val left: Expression,
+    val right: Expression,
+) : Expression {
+    override fun evaluate(scope: Scope): Value =
+        evaluateNumberLogicalExpression(
+            scope = scope,
+            left = left,
+            right = right,
+        ) { a, b -> a < b }
+}
+
+data class GreaterThenExpression(
+    val left: Expression,
+    val right: Expression,
+) : Expression {
+    override fun evaluate(scope: Scope): Value =
+        evaluateNumberLogicalExpression(
+            scope = scope,
+            left = left,
+            right = right,
+        ) { a, b -> a > b }
+}
+
 data class OrExpression(
     val left: Expression,
     val right: Expression,
@@ -139,10 +163,24 @@ private fun evaluateNumberBinaryExpression(
     right: Expression,
     calculate: (left: Double, right: Double) -> Double,
 ): NumberValue {
-    val leftNumber = asOperandValue(value = left.evaluate(scope = scope))
-    val rightNumber = asOperandValue(value = right.evaluate(scope = scope))
+    val leftNumber = asMathOperandValue(value = left.evaluate(scope = scope))
+    val rightNumber = asMathOperandValue(value = right.evaluate(scope = scope))
 
     return NumberValue(
+        value = calculate(leftNumber.value, rightNumber.value),
+    )
+}
+
+private fun evaluateNumberLogicalExpression(
+    scope: Scope,
+    left: Expression,
+    right: Expression,
+    calculate: (left: Double, right: Double) -> Boolean,
+): BooleanValue {
+    val leftNumber = left.evaluate(scope = scope).asNumberValue()
+    val rightNumber = right.evaluate(scope = scope).asNumberValue()
+
+    return BooleanValue(
         value = calculate(leftNumber.value, rightNumber.value),
     )
 }
@@ -161,7 +199,7 @@ private fun evaluateLogicalBinaryExpression(
     )
 }
 
-private fun asOperandValue(value: Value) = value.asNumberValue(
+private fun asMathOperandValue(value: Value) = value.asNumberValue(
     message = "Cannot perform mathematical operations on non-number",
 )
 

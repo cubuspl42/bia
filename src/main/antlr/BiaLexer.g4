@@ -19,11 +19,13 @@ Multiplication          : '*' ;
 Reminder                : '%' ;
 Equals                  : '==' ;
 Assign                  : '=' ;
+Lt                      : '<' ;
+Gt                      : '<' ;
 
 // Other
 Whitespace              : (' ' | '\n') -> skip ;
 LineComment             : '//' ~[\r\n]* -> skip ;
-Identifier              : [a-z]+ ;
+Identifier              : ([a-zA-Z] | ':')+ ;
 LeftParen               : '(' ;
 RightParen              : ')' ;
 LeftBrace               : '{' ;

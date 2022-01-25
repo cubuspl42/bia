@@ -19,6 +19,10 @@ data class ListValue(
     override val value: List<Value>,
 ) : Value
 
+data class SequenceValue(
+    override val value: Sequence<Value>,
+) : Value
+
 abstract class FunctionValue : Value {
     abstract fun call(arguments: List<Value>): Value
 
@@ -35,11 +39,13 @@ class DefinedFunctionValue(
             throw UnsupportedOperationException("Function has to be called with as many arguments as it was defined with")
         }
 
+        val namedArguments = definition.argumentNames.zip(arguments) { name, value ->
+            name to value
+        }
+
         return evaluateBody(
             outerScope = closure.extend(
-                namedValues = definition.argumentNames.zip(arguments) { name, value ->
-                    name to value
-                }
+                namedValues = namedArguments,
             ),
             body = definition.body,
         )
@@ -54,6 +60,9 @@ fun Value.asBooleanValue(message: String = "Expected a boolean, got"): BooleanVa
 
 fun Value.asListValue(message: String = "Expected a list, got"): ListValue =
     this as? ListValue ?: throw UnsupportedOperationException("$message: $this")
+
+fun Value.asSequenceValue(message: String = "Expected a sequence, got"): SequenceValue =
+    this as? SequenceValue ?: throw UnsupportedOperationException("$message: $this")
 
 fun Value.asFunctionValue(message: String = "Expected a function, got"): FunctionValue =
     this as? FunctionValue ?: throw UnsupportedOperationException("$message: $this")

@@ -8,8 +8,10 @@ import bia.model.Expression
 import bia.model.FunctionBody
 import bia.model.FunctionDeclaration
 import bia.model.FunctionDefinition
+import bia.model.GreaterThenExpression
 import bia.model.IfExpression
 import bia.model.IntLiteralExpression
+import bia.model.LessThenExpression
 import bia.model.MultiplicationExpression
 import bia.model.OrExpression
 import bia.model.ReferenceExpression
@@ -100,6 +102,8 @@ fun transformExpression(
             BiaLexer.Multiplication -> MultiplicationExpression(left, right)
             BiaLexer.Reminder -> ReminderExpression(left, right)
             BiaLexer.Or -> OrExpression(left, right)
+            BiaLexer.Lt -> LessThenExpression(left, right)
+            BiaLexer.Gt -> GreaterThenExpression(left, right)
             else -> throw UnsupportedOperationException("Unrecognized operator: ${operator.text}")
         }
     }
