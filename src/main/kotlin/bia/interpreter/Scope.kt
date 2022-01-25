@@ -15,5 +15,9 @@ data class Scope(
         values = values + (name to value)
     )
 
+    fun extend(namedValues: List<Pair<String, Value>>) = Scope(
+        values = values + namedValues.toMap()
+    )
+
     fun getValue(name: String): Value? = values[name]
 }

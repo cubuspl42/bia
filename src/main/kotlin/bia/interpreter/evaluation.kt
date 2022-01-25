@@ -4,9 +4,20 @@ import bia.model.Declaration
 import bia.model.Expression
 import bia.model.FunctionBody
 import bia.model.FunctionDeclaration
-import bia.model.FunctionValue
+import bia.model.DefinedFunctionValue
 import bia.model.Value
 import bia.model.ValueDeclaration
+
+fun evaluateProgramBody(
+    programBody: FunctionBody,
+): Value {
+    val result = evaluateBody(
+        outerScope = builtinScope,
+        body = programBody,
+    )
+
+    return result
+}
 
 fun evaluateBody(
     outerScope: Scope,
@@ -34,7 +45,7 @@ private fun executeDeclaration(
             scope = scope,
             expression = declaration.initializer,
         )
-        is FunctionDeclaration -> FunctionValue(
+        is FunctionDeclaration -> DefinedFunctionValue(
             closure = scope,
             definition = declaration.definition,
         )

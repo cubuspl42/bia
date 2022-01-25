@@ -1,0 +1,7 @@
+def f(n) {
+    return (n % 3 == 0) or (n % 5 == 0)
+}
+
+val result = filter(until(1, 1000), f)
+
+return result

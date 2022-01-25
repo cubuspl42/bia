@@ -11,7 +11,9 @@ import bia.model.FunctionDefinition
 import bia.model.IfExpression
 import bia.model.IntLiteralExpression
 import bia.model.MultiplicationExpression
+import bia.model.OrExpression
 import bia.model.ReferenceExpression
+import bia.model.ReminderExpression
 import bia.model.SubtractionExpression
 import bia.model.ValueDeclaration
 import bia.parser.antlr.BiaLexer
@@ -50,7 +52,7 @@ fun transformDeclaration(
     ): Declaration = FunctionDeclaration(
         givenName = ctx.name.text,
         definition = FunctionDefinition(
-            argumentName = ctx.argument.text,
+            argumentNames = ctx.argumentListDeclaration().argumentDeclaration().map { it.text },
             body = transformBody(body = ctx.body()),
         )
     )
@@ -65,7 +67,9 @@ fun transformExpression(
     override fun visitCallExpression(ctx: BiaParser.CallExpressionContext): Expression =
         CallExpression(
             callee = transformExpression(expression = ctx.callee),
-            argument = transformExpression(expression = ctx.argument),
+            arguments = ctx.callArgumentList().expression().map {
+                transformExpression(expression = it)
+            },
         )
 
     override fun visitEqualsOperation(ctx: BiaParser.EqualsOperationContext): Expression =
@@ -94,6 +98,8 @@ fun transformExpression(
             BiaLexer.Plus -> AdditionExpression(left, right)
             BiaLexer.Minus -> SubtractionExpression(left, right)
             BiaLexer.Multiplication -> MultiplicationExpression(left, right)
+            BiaLexer.Reminder -> ReminderExpression(left, right)
+            BiaLexer.Or -> OrExpression(left, right)
             else -> throw UnsupportedOperationException("Unrecognized operator: ${operator.text}")
         }
     }
@@ -104,4 +110,6 @@ fun transformExpression(
             trueBranch = transformExpression(expression = ctx.trueBranch),
             falseBranch = transformExpression(expression = ctx.falseBranch),
         )
+
+
 }.visit(expression)

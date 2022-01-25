@@ -10,42 +10,60 @@ data class AdditionExpression(
     val augend: Expression,
     val addend: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value {
-        val augendNumber = asOperandValue(value = augend.evaluate(scope = scope))
-        val addendNumber = asOperandValue(value = addend.evaluate(scope = scope))
-
-        return NumberValue(
-            value = augendNumber.value + addendNumber.value,
-        )
-    }
+    override fun evaluate(scope: Scope): Value =
+        evaluateNumberBinaryExpression(
+            scope = scope,
+            left = augend,
+            right = addend,
+        ) { a, b -> a + b }
 }
 
 data class SubtractionExpression(
     val minuend: Expression,
     val subtrahend: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value {
-        val minuendNumber = asOperandValue(value = minuend.evaluate(scope = scope))
-        val subtrahendNumber = asOperandValue(value = subtrahend.evaluate(scope = scope))
-
-        return NumberValue(
-            value = minuendNumber.value - subtrahendNumber.value,
-        )
-    }
+    override fun evaluate(scope: Scope): Value =
+        evaluateNumberBinaryExpression(
+            scope = scope,
+            left = minuend,
+            right = subtrahend,
+        ) { a, b -> a - b }
 }
 
 data class MultiplicationExpression(
     val multiplier: Expression,
     val multiplicand: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value {
-        val multiplierNumber = asOperandValue(value = multiplier.evaluate(scope = scope))
-        val multiplicandNumber = asOperandValue(value = multiplicand.evaluate(scope = scope))
+    override fun evaluate(scope: Scope): Value =
+        evaluateNumberBinaryExpression(
+            scope = scope,
+            left = multiplier,
+            right = multiplicand,
+        ) { a, b -> a * b }
+}
 
-        return NumberValue(
-            value = multiplierNumber.value * multiplicandNumber.value,
-        )
-    }
+data class ReminderExpression(
+    val dividend: Expression,
+    val divisor: Expression,
+) : Expression {
+    override fun evaluate(scope: Scope): Value =
+        evaluateNumberBinaryExpression(
+            scope = scope,
+            left = dividend,
+            right = divisor,
+        ) { a, b -> a % b }
+}
+
+data class OrExpression(
+    val left: Expression,
+    val right: Expression,
+) : Expression {
+    override fun evaluate(scope: Scope): Value =
+        evaluateLogicalBinaryExpression(
+            scope = scope,
+            left = left,
+            right = right,
+        ) { a, b -> a || b }
 }
 
 data class EqualsExpression(
@@ -72,18 +90,19 @@ data class ReferenceExpression(
 
 data class CallExpression(
     val callee: Expression,
-    val argument: Expression,
+    val arguments: List<Expression>,
 ) : Expression {
     override fun evaluate(scope: Scope): Value {
-        val calleeValue = asFunctionValue(
-            value = callee.evaluate(scope = scope),
+        val calleeValue = callee.evaluate(scope = scope).asFunctionValue(
             message = "Only functions can be called, tried",
         )
 
-        val argumentValue = argument.evaluate(scope = scope)
+        val argumentValues = arguments.map {
+            it.evaluate(scope = scope)
+        }
 
         return calleeValue.call(
-            argumentValue = argumentValue,
+            arguments = argumentValues,
         )
     }
 }
@@ -103,8 +122,7 @@ data class IfExpression(
     val falseBranch: Expression,
 ) : Expression {
     override fun evaluate(scope: Scope): Value {
-        val guardValue = asBooleanValue(
-            value = guard.evaluate(scope = scope),
+        val guardValue = guard.evaluate(scope = scope).asBooleanValue(
             message = "Guard has to be a boolean",
         )
 
@@ -115,16 +133,38 @@ data class IfExpression(
     }
 }
 
-private fun asNumberValue(value: Value, message: String): NumberValue =
-    value as? NumberValue ?: throw UnsupportedOperationException("$message: $value")
+private fun evaluateNumberBinaryExpression(
+    scope: Scope,
+    left: Expression,
+    right: Expression,
+    calculate: (left: Double, right: Double) -> Double,
+): NumberValue {
+    val leftNumber = asOperandValue(value = left.evaluate(scope = scope))
+    val rightNumber = asOperandValue(value = right.evaluate(scope = scope))
 
-private fun asBooleanValue(value: Value, message: String): BooleanValue =
-    value as? BooleanValue ?: throw UnsupportedOperationException("$message: $value")
+    return NumberValue(
+        value = calculate(leftNumber.value, rightNumber.value),
+    )
+}
 
-private fun asFunctionValue(value: Value, message: String): FunctionValue =
-    value as? FunctionValue ?: throw UnsupportedOperationException("$message: $value")
+private fun evaluateLogicalBinaryExpression(
+    scope: Scope,
+    left: Expression,
+    right: Expression,
+    calculate: (left: Boolean, right: Boolean) -> Boolean,
+): BooleanValue {
+    val leftBoolean = asLogicalValue(value = left.evaluate(scope = scope))
+    val rightBoolean = asLogicalValue(value = right.evaluate(scope = scope))
 
-private fun asOperandValue(value: Value) = asNumberValue(
-    value = value,
+    return BooleanValue(
+        value = calculate(leftBoolean.value, rightBoolean.value),
+    )
+}
+
+private fun asOperandValue(value: Value) = value.asNumberValue(
     message = "Cannot perform mathematical operations on non-number",
+)
+
+private fun asLogicalValue(value: Value) = value.asBooleanValue(
+    message = "Cannot perform logical operations on non-boolean",
 )

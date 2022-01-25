@@ -15,7 +15,7 @@ data class FunctionDeclaration(
 ) : Declaration
 
 data class FunctionDefinition(
-    val argumentName: String,
+    val argumentNames: List<String>,
     val body: FunctionBody,
 )
 
