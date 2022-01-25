@@ -68,6 +68,7 @@ private fun executeFunctionDeclaration(
         scope.extend(
             name = declaration.givenName,
             value = DefinedFunctionValue(
+                name = declaration.givenName,
                 closure = Scope.delegated { resultScope },
                 definition = declaration.definition,
             ),

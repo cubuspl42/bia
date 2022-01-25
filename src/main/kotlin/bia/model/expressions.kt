@@ -42,6 +42,18 @@ data class MultiplicationExpression(
         ) { a, b -> a * b }
 }
 
+data class DivisionExpression(
+    val dividend: Expression,
+    val divisor: Expression,
+) : Expression {
+    override fun evaluate(scope: Scope): Value =
+        evaluateNumberBinaryExpression(
+            scope = scope,
+            left = dividend,
+            right = divisor,
+        ) { a, b -> a / b }
+}
+
 data class ReminderExpression(
     val dividend: Expression,
     val divisor: Expression,
@@ -174,10 +186,10 @@ data class IfExpression(
             message = "Guard has to be a boolean",
         )
 
-        val trueBranchValue = trueBranch.evaluate(scope = scope)
-        val falseBranchValue = falseBranch.evaluate(scope = scope)
+        fun evaluateTrueBranchValue() = trueBranch.evaluate(scope = scope)
+        fun evaluateFalseBranchValue() = falseBranch.evaluate(scope = scope)
 
-        return if (guardValue.value) trueBranchValue else falseBranchValue
+        return if (guardValue.value) evaluateTrueBranchValue() else evaluateFalseBranchValue()
     }
 }
 

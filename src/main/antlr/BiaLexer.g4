@@ -18,6 +18,7 @@ IntLiteral              : '0'|[1-9][0-9]* ;
 Plus                    : '+' ;
 Minus                   : '-' ;
 Multiplication          : '*' ;
+Division                  : '/' ;
 Reminder                : '%' ;
 Equals                  : '==' ;
 Assign                  : '=' ;

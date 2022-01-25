@@ -2,6 +2,7 @@ package bia.interpreter
 
 import bia.model.FunctionValue
 import bia.model.ListValue
+import bia.model.NullValue
 import bia.model.NumberValue
 import bia.model.SequenceValue
 import bia.model.Value
@@ -45,6 +46,15 @@ private val foldL = object : FunctionValue() {
         return list.value.fold(initial) { acc, value ->
             operation.call(listOf(acc, value))
         }
+    }
+}
+
+private val firstWhereOrNull = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+        val predicate = getArgument(arguments, 1) { asFunctionValue() }
+
+        return list.value.find { callPredicate(predicate, it) } ?: NullValue
     }
 }
 
@@ -125,11 +135,22 @@ private val sqrt = object : FunctionValue() {
     }
 }
 
+private val orElse = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val value = getArgument(arguments, 0)
+        val provideFallback = getArgument(arguments, 1) { asFunctionValue() }
+
+        return if (value == NullValue) callProvide(provideFallback)
+        else value
+    }
+}
+
 val builtinScope = Scope.of(
     values = mapOf(
         "until" to until,
         "filter" to filter,
         "fold:L" to foldL,
+        "firstWhereOrNull" to firstWhereOrNull,
         "filter:Sq" to filterSq,
         "seqOf" to seqOf,
         "takeWhile:Sq" to takeWhileSq,
@@ -137,6 +158,7 @@ val builtinScope = Scope.of(
         "concat:Sq" to concatSq,
         "consLazy" to consLazy,
         "sqrt" to sqrt,
+        "orElse" to orElse,
     ),
 )
 

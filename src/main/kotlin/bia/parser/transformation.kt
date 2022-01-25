@@ -4,6 +4,7 @@ import bia.model.AdditionExpression
 import bia.model.AndExpression
 import bia.model.CallExpression
 import bia.model.Declaration
+import bia.model.DivisionExpression
 import bia.model.EqualsExpression
 import bia.model.Expression
 import bia.model.FunctionBody
@@ -102,6 +103,7 @@ fun transformExpression(
             BiaLexer.Plus -> AdditionExpression(left, right)
             BiaLexer.Minus -> SubtractionExpression(left, right)
             BiaLexer.Multiplication -> MultiplicationExpression(left, right)
+            BiaLexer.Division -> DivisionExpression(left, right)
             BiaLexer.Reminder -> ReminderExpression(left, right)
             BiaLexer.Or -> OrExpression(left, right)
             BiaLexer.And -> AndExpression(left, right)

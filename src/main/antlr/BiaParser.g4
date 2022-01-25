@@ -5,6 +5,7 @@ options { tokenVocab = BiaLexer; }
 program : body EOF ;
 
 expression : left=expression operator=Multiplication right=expression # binaryOperation
+           | left=expression operator=Division right=expression # binaryOperation
            | left=expression operator=Reminder right=expression # binaryOperation
            | left=expression operator=Plus right=expression # binaryOperation
            | left=expression operator=Minus right=expression # binaryOperation

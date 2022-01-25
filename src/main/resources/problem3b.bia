@@ -1,0 +1,33 @@
+// The prime factors of 13195 are 5, 7, 13 and 29.
+// What is the largest prime factor of the number 600 851 475 143 ?
+
+val N = 600851475143
+
+def findSmallestFactor(n) {
+    def isFactor(i) {
+        return n % i == 0
+    }
+
+    val smallestFactorBelowSqrtOrNull =
+        firstWhereOrNull(until(2, sqrt(n)), isFactor)
+
+    def returnN() {
+        return n
+    }
+
+    return orElse(smallestFactorBelowSqrtOrNull, returnN)
+}
+
+def findSmallestPrimeFactor(n) {
+    return findSmallestFactor(n)
+}
+
+def findLargestPrimeFactor(n) {
+     val smallestPrimeFactor = findSmallestPrimeFactor(n)
+
+     return if (smallestPrimeFactor < n) then
+        (findLargestPrimeFactor(n / smallestPrimeFactor))
+     else n
+}
+
+return findLargestPrimeFactor(N)

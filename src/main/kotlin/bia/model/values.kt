@@ -30,7 +30,13 @@ abstract class FunctionValue : Value {
         get() = this
 }
 
+object NullValue : Value {
+    override val value: Any
+        get() = this
+}
+
 class DefinedFunctionValue(
+    private val name: String,
     private val closure: Scope,
     private val definition: FunctionDefinition,
 ) : FunctionValue() {
@@ -43,10 +49,12 @@ class DefinedFunctionValue(
             name to value
         }
 
+        val outerScope = closure.extend(
+            namedValues = namedArguments,
+        )
+
         return evaluateBody(
-            outerScope = closure.extend(
-                namedValues = namedArguments,
-            ),
+            outerScope = outerScope,
             body = definition.body,
         )
     }

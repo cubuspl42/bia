@@ -1,7 +1,7 @@
 import bia.interpreter.evaluateProgramBody
 import bia.parser.parseProgram
 
-const val sourceName = "problem3.bia"
+const val sourceName = "problem3b.bia"
 
 fun main() {
     val source = getResourceAsText(sourceName) ?: throw RuntimeException("Couldn't load the source file")
