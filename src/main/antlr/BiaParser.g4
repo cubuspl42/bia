@@ -6,6 +6,7 @@ program : body EOF ;
 
 expression : left=expression operator=Multiplication right=expression # binaryOperation
            | left=expression operator=Division right=expression # binaryOperation
+           | left=expression operator=IntegerDivision right=expression # binaryOperation
            | left=expression operator=Reminder right=expression # binaryOperation
            | left=expression operator=Plus right=expression # binaryOperation
            | left=expression operator=Minus right=expression # binaryOperation
@@ -16,10 +17,12 @@ expression : left=expression operator=Multiplication right=expression # binaryOp
            | operator=Not expression # unaryOperation
            | left=expression operator=Equals right=expression # equalsOperation
            | LeftParen expression RightParen # parenExpression
-           | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
            | callee=expression LeftParen callArgumentList RightParen # callExpression
            | IntLiteral # intLiteral
-           | Identifier # reference ;
+           | TrueLiteral # trueLiteral
+           | FalseLiteral # falseLiteral
+           | Identifier # reference
+           | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression ;
 
 callArgumentList: (expression (Comma expression)*)? ;
 

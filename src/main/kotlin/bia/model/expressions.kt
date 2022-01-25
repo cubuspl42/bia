@@ -54,6 +54,18 @@ data class DivisionExpression(
         ) { a, b -> a / b }
 }
 
+data class IntegerDivisionExpression(
+    val dividend: Expression,
+    val divisor: Expression,
+) : Expression {
+    override fun evaluate(scope: Scope): Value =
+        evaluateNumberBinaryExpression(
+            scope = scope,
+            left = dividend,
+            right = divisor,
+        ) { a, b -> (a.toLong() / b.toLong()).toDouble() }
+}
+
 data class ReminderExpression(
     val dividend: Expression,
     val divisor: Expression,
@@ -173,6 +185,15 @@ data class IntLiteralExpression(
     override fun evaluate(scope: Scope): Value =
         NumberValue(
             value = value.toDouble(),
+        )
+}
+
+data class BooleanLiteralExpression(
+    val value: Boolean,
+) : Expression {
+    override fun evaluate(scope: Scope): Value =
+        BooleanValue(
+            value = value,
         )
 }
 

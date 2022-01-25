@@ -1,0 +1,44 @@
+// A palindromic number reads the same both ways.
+// The largest palindrome made from the product of two 2-digit numbers is 9009 = 91 × 99.
+
+// Find the largest palindrome made from the product of two 3-digit numbers.
+
+val threeDigitNumbers = to(100, 999)
+
+def multiply(a, b) {
+    return a * b
+}
+
+val candidates = product:L2(
+   threeDigitNumbers,
+   threeDigitNumbers,
+   multiply
+)
+
+def extractDigits(n) {
+    return if (n < 10) then listOf(n)
+    else (concat:L(extractDigits(n ~/ 10), listOf(n % 10)))
+}
+
+def isListPalindrome(l) {
+    def recurse() {
+        val fst = first:L(l)
+        val lst = last:L(l)
+
+        return if (fst == lst) then isListPalindrome(dropLast:L(drop:L(l, 1), 1))
+        else false
+    }
+
+    return if (size:L(l) < 2) then true
+    else (recurse())
+}
+
+def isNumberPalindrome(n) {
+    return isListPalindrome(extractDigits(n))
+}
+
+val palindromes = filter(candidates, isNumberPalindrome)
+
+val largestPalindrome = max:L(palindromes)
+
+return largestPalindrome

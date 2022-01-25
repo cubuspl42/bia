@@ -26,6 +26,19 @@ private val until = object : FunctionValue() {
     }
 }
 
+private val to = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val start = getArgument(arguments, 0) { asNumberValue() }
+        val end = getArgument(arguments, 1) { asNumberValue() }
+
+        return ListValue(
+            value = (start.value.toLong()..end.value.toLong()).map {
+                NumberValue(value = it.toDouble())
+            }.toList(),
+        )
+    }
+}
+
 private val filter = object : FunctionValue() {
     override fun call(arguments: List<Value>): Value {
         val list = getArgument(arguments, 0) { asListValue() }
@@ -55,6 +68,116 @@ private val firstWhereOrNull = object : FunctionValue() {
         val predicate = getArgument(arguments, 1) { asFunctionValue() }
 
         return list.value.find { callPredicate(predicate, it) } ?: NullValue
+    }
+}
+
+private val productL2 = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list1 = getArgument(arguments, 0) { asListValue() }
+        val list2 = getArgument(arguments, 1) { asListValue() }
+        val combine = getArgument(arguments, 2) { asFunctionValue() }
+
+        return ListValue(
+            value = list1.value.flatMap { a ->
+                list2.value.map { b -> combine.call(listOf(a, b)) }
+            },
+        )
+    }
+}
+
+private val consL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val head = getArgument(arguments, 0)
+        val tail = getArgument(arguments, 1) { asListValue() }
+
+        return ListValue(
+            value = listOf(head) + tail,
+        )
+    }
+}
+
+private val firstL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+
+        return list.value.firstOrNull() ?: NullValue
+    }
+}
+
+private val lastL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+
+        return list.value.lastOrNull() ?: NullValue
+    }
+}
+
+private val dropL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+        val n = getArgument(arguments, 1) { asNumberValue() }
+
+        return ListValue(
+            value = list.value.drop(n.value.toInt()),
+        )
+    }
+}
+
+private val dropLastL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+        val n = getArgument(arguments, 1) { asNumberValue() }
+
+        return ListValue(
+            value = list.value.dropLast(n.value.toInt()),
+        )
+    }
+}
+
+private val sizeL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+
+        return NumberValue(
+            value = list.value.size.toDouble(),
+        )
+    }
+}
+
+private val maxByL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+        val selector = getArgument(arguments, 1) { asFunctionValue() }
+
+        return list.value.maxByOrNull {
+            selector.call(listOf(it)).asNumberValue().value
+        } ?: NullValue
+    }
+}
+
+private val maxL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val list = getArgument(arguments, 0) { asListValue() }
+
+        return list.value.maxByOrNull { it.asNumberValue().value } ?: NullValue
+    }
+}
+
+private val listOf = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value =
+        ListValue(
+            value = arguments,
+        )
+}
+
+private val concatL = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val left = getArgument(arguments, 0) { asListValue() }
+        val right = getArgument(arguments, 1) { asListValue() }
+
+        return ListValue(
+            value = left.value + right.value,
+        )
     }
 }
 
@@ -148,9 +271,21 @@ private val orElse = object : FunctionValue() {
 val builtinScope = Scope.of(
     values = mapOf(
         "until" to until,
+        "to" to to,
         "filter" to filter,
         "fold:L" to foldL,
         "firstWhereOrNull" to firstWhereOrNull,
+        "product:L2" to productL2,
+        "cons:L" to consL,
+        "first:L" to firstL,
+        "last:L" to lastL,
+        "drop:L" to dropL,
+        "dropLast:L" to dropLastL,
+        "size:L" to sizeL,
+        "maxBy:L" to maxByL,
+        "max:L" to maxL,
+        "listOf" to listOf,
+        "concat:L" to concatL,
         "filter:Sq" to filterSq,
         "seqOf" to seqOf,
         "takeWhile:Sq" to takeWhileSq,

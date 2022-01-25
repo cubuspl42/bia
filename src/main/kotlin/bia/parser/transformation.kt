@@ -2,6 +2,7 @@ package bia.parser
 
 import bia.model.AdditionExpression
 import bia.model.AndExpression
+import bia.model.BooleanLiteralExpression
 import bia.model.CallExpression
 import bia.model.Declaration
 import bia.model.DivisionExpression
@@ -13,6 +14,7 @@ import bia.model.FunctionDefinition
 import bia.model.GreaterThenExpression
 import bia.model.IfExpression
 import bia.model.IntLiteralExpression
+import bia.model.IntegerDivisionExpression
 import bia.model.LessThenExpression
 import bia.model.MultiplicationExpression
 import bia.model.NotExpression
@@ -88,6 +90,16 @@ fun transformExpression(
             value = ctx.IntLiteral().text.toLong(radix = 10),
         )
 
+    override fun visitTrueLiteral(ctx: BiaParser.TrueLiteralContext?): Expression =
+        BooleanLiteralExpression(
+            value = true,
+        )
+
+    override fun visitFalseLiteral(ctx: BiaParser.FalseLiteralContext?): Expression =
+        BooleanLiteralExpression(
+            value = false,
+        )
+
     override fun visitParenExpression(ctx: BiaParser.ParenExpressionContext): Expression =
         transformExpression(
             expression = ctx.expression(),
@@ -104,6 +116,7 @@ fun transformExpression(
             BiaLexer.Minus -> SubtractionExpression(left, right)
             BiaLexer.Multiplication -> MultiplicationExpression(left, right)
             BiaLexer.Division -> DivisionExpression(left, right)
+            BiaLexer.IntegerDivision -> IntegerDivisionExpression(left, right)
             BiaLexer.Reminder -> ReminderExpression(left, right)
             BiaLexer.Or -> OrExpression(left, right)
             BiaLexer.And -> AndExpression(left, right)

@@ -13,12 +13,15 @@ Not                     : 'not' ;
 
 // Literals
 IntLiteral              : '0'|[1-9][0-9]* ;
+TrueLiteral            : 'true' ;
+FalseLiteral            : 'false' ;
 
 // Operators
 Plus                    : '+' ;
 Minus                   : '-' ;
 Multiplication          : '*' ;
-Division                  : '/' ;
+Division                : '/' ;
+IntegerDivision         : '~/' ;
 Reminder                : '%' ;
 Equals                  : '==' ;
 Assign                  : '=' ;
@@ -28,7 +31,7 @@ Gt                      : '>' ;
 // Other
 Whitespace              : (' ' | '\n') -> skip ;
 LineComment             : '//' ~[\r\n]* -> skip ;
-Identifier              : ([a-zA-Z] | ':')+ ;
+Identifier              : [a-z] ([a-zA-Z1-9] | ':')* ;
 LeftParen               : '(' ;
 RightParen              : ')' ;
 LeftBrace               : '{' ;
