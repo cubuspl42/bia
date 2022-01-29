@@ -1,16 +1,19 @@
 package bia.interpreter
 
+import bia.model.BigIntegerValue
 import bia.model.FunctionValue
 import bia.model.ListValue
 import bia.model.NullValue
 import bia.model.NumberValue
 import bia.model.SequenceValue
 import bia.model.Value
+import bia.model.asBigIntegerValue
 import bia.model.asBooleanValue
 import bia.model.asFunctionValue
 import bia.model.asListValue
 import bia.model.asNumberValue
 import bia.model.asSequenceValue
+import java.math.BigInteger
 import kotlin.math.sqrt
 
 private val until = object : FunctionValue() {
@@ -268,6 +271,71 @@ private val orElse = object : FunctionValue() {
     }
 }
 
+private val bigIntOf = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val value = getArgument(arguments, 0) { asNumberValue() }
+
+        return BigIntegerValue(
+            value = BigInteger.valueOf(value.value.toLong()),
+        )
+    }
+}
+
+private val addBi = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val left = getArgument(arguments, 0) { asBigIntegerValue() }
+        val right = getArgument(arguments, 1) { asBigIntegerValue() }
+
+        return BigIntegerValue(
+            value = left.value + right.value,
+        )
+    }
+}
+
+private val subBi = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val left = getArgument(arguments, 0) { asBigIntegerValue() }
+        val right = getArgument(arguments, 1) { asBigIntegerValue() }
+
+        return BigIntegerValue(
+            value = left.value - right.value,
+        )
+    }
+}
+
+private val mulBi = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val left = getArgument(arguments, 0) { asBigIntegerValue() }
+        val right = getArgument(arguments, 1) { asBigIntegerValue() }
+
+        return BigIntegerValue(
+            value = left.value * right.value,
+        )
+    }
+}
+
+private val divBi = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val left = getArgument(arguments, 0) { asBigIntegerValue() }
+        val right = getArgument(arguments, 1) { asBigIntegerValue() }
+
+        return BigIntegerValue(
+            value = left.value / right.value,
+        )
+    }
+}
+
+private val gcdBi = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value {
+        val left = getArgument(arguments, 0) { asBigIntegerValue() }
+        val right = getArgument(arguments, 1) { asBigIntegerValue() }
+
+        return BigIntegerValue(
+            value = left.value.gcd(right.value),
+        )
+    }
+}
+
 val builtinScope = Scope.of(
     values = mapOf(
         "until" to until,
@@ -294,6 +362,12 @@ val builtinScope = Scope.of(
         "consLazy" to consLazy,
         "sqrt" to sqrt,
         "orElse" to orElse,
+        "bigIntOf" to bigIntOf,
+        "add:Bi" to addBi,
+        "sub:Bi" to subBi,
+        "mul:Bi" to mulBi,
+        "div:Bi" to divBi,
+        "gcd:Bi" to gcdBi,
     ),
 )
 

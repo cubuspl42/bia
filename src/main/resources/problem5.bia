@@ -1,0 +1,14 @@
+// 2520 is the smallest number that can be divided by each of the numbers from 1 to 10 without any remainder.
+// What is the smallest positive number that is evenly divisible by all of the numbers from 1 to 20?
+
+def lcm(x, y) {
+    return mul:Bi(div:Bi(x, gcd:Bi(x, y)), y)
+}
+
+def accumulate(acc, i) {
+    return lcm(acc, bigIntOf(i))
+}
+
+val answer = fold:L(to(1, 20), bigIntOf(1), accumulate)
+
+return answer

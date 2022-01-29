@@ -2,6 +2,7 @@ package bia.model
 
 import bia.interpreter.Scope
 import bia.interpreter.evaluateBody
+import java.math.BigInteger
 
 sealed interface Value {
     val value: Any
@@ -21,6 +22,10 @@ data class ListValue(
 
 data class SequenceValue(
     override val value: Sequence<Value>,
+) : Value
+
+data class BigIntegerValue(
+    override val value: BigInteger,
 ) : Value
 
 abstract class FunctionValue : Value {
@@ -71,6 +76,9 @@ fun Value.asListValue(message: String = "Expected a list, got"): ListValue =
 
 fun Value.asSequenceValue(message: String = "Expected a sequence, got"): SequenceValue =
     this as? SequenceValue ?: throw UnsupportedOperationException("$message: $this")
+
+fun Value.asBigIntegerValue(message: String = "Expected a big integer, got"): BigIntegerValue =
+    this as? BigIntegerValue ?: throw UnsupportedOperationException("$message: $this")
 
 fun Value.asFunctionValue(message: String = "Expected a function, got"): FunctionValue =
     this as? FunctionValue ?: throw UnsupportedOperationException("$message: $this")
