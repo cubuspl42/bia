@@ -24,17 +24,23 @@ expression : left=expression operator=Multiplication right=expression # binaryOp
            | Identifier # reference
            | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression ;
 
+type : NumberType # numberType
+     | BooleanType # booleanType
+     | BigIntegerType # bigIntegerType ;
+
 callArgumentList: (expression (Comma expression)*)? ;
 
 valueDeclaration : Val name=Identifier Assign initializer=expression ;
 
 functionDeclaration : Def name=Identifier LeftParen argumentListDeclaration RightParen LeftBrace body RightBrace ;
 
+externalFunctionDeclaration : External Def name=Identifier LeftParen argumentListDeclaration RightParen Colon returnType=type;
+
 argumentListDeclaration : (argumentDeclaration (Comma argumentDeclaration)*)? ;
 
-argumentDeclaration: name=Identifier ;
+argumentDeclaration: name=Identifier Colon type;
 
-declaration : valueDeclaration | functionDeclaration ;
+declaration : valueDeclaration | functionDeclaration | externalFunctionDeclaration ;
 
 body : declaration* return_ ;
 

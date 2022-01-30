@@ -3,11 +3,11 @@ val b = a + 20
 val c = 15 * 2
 val d = b == c
 
-def f(x) {
+def f(x : Number) {
     val a = x * 2
     val b = a + 3
 
-    def g(y) {
+    def g(y : Number) {
         return a + b + y
     }
 

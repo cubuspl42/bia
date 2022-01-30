@@ -1,0 +1,1 @@
+external def mul:Bi(x : BigInteger, y : BigInteger): BigInteger

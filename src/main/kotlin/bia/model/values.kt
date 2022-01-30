@@ -1,6 +1,6 @@
 package bia.model
 
-import bia.interpreter.Scope
+import bia.interpreter.DynamicScope
 import bia.interpreter.evaluateBody
 import java.math.BigInteger
 
@@ -42,16 +42,16 @@ object NullValue : Value {
 
 class DefinedFunctionValue(
     private val name: String,
-    private val closure: Scope,
+    private val closure: DynamicScope,
     private val definition: FunctionDefinition,
 ) : FunctionValue() {
     override fun call(arguments: List<Value>): Value {
-        if (arguments.size != definition.argumentNames.size) {
+        if (arguments.size != definition.argumentDeclarations.size) {
             throw UnsupportedOperationException("Function has to be called with as many arguments as it was defined with")
         }
 
-        val namedArguments = definition.argumentNames.zip(arguments) { name, value ->
-            name to value
+        val namedArguments = definition.argumentDeclarations.zip(arguments) { declaration, value ->
+            declaration.givenName to value
         }
 
         val outerScope = closure.extend(

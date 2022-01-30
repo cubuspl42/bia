@@ -2,30 +2,30 @@ package bia.interpreter
 
 import bia.model.Value
 
-abstract class Scope {
+abstract class DynamicScope {
     companion object {
-        fun of(values: Map<String, Value>): Scope = SimpleScope(
+        fun of(values: Map<String, Value>): DynamicScope = SimpleDynamicScope(
             values = values,
         )
 
-        fun delegated(delegate: () -> Scope): Scope = object : Scope() {
+        fun delegated(delegate: () -> DynamicScope): DynamicScope = object : DynamicScope() {
             override val values: Map<String, Value> by lazy { delegate().values }
         }
     }
 
     abstract val values: Map<String, Value>
 
-    fun extend(name: String, value: Value) = Scope.of(
+    fun extend(name: String, value: Value) = DynamicScope.of(
         values = values + (name to value)
     )
 
-    fun extend(namedValues: List<Pair<String, Value>>) = Scope.of(
+    fun extend(namedValues: List<Pair<String, Value>>) = DynamicScope.of(
         values = values + namedValues.toMap()
     )
 
     fun getValue(name: String): Value? = values[name]
 }
 
-data class SimpleScope(
+data class SimpleDynamicScope(
     override val values: Map<String, Value>,
-) : Scope()
+) : DynamicScope()

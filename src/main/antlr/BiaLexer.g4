@@ -10,6 +10,12 @@ Def                     : 'def' ;
 Or                      : 'or' ;
 And                     : 'and' ;
 Not                     : 'not' ;
+External                : 'external' ;
+
+// Built-in types
+NumberType              : 'Number' ;
+BooleanType             : 'Boolean' ;
+BigIntegerType          : 'BigInteger' ;
 
 // Literals
 IntLiteral              : '0'|[1-9][0-9]* ;
@@ -37,3 +43,4 @@ RightParen              : ')' ;
 LeftBrace               : '{' ;
 RightBrace              : '}' ;
 Comma                   : ',' ;
+Colon                   : ':' ;

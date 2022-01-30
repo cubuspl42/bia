@@ -1,10 +1,12 @@
 package bia.interpreter
 
+import bia.model.BodyDeclaration
 import bia.model.Declaration
 import bia.model.Expression
 import bia.model.FunctionBody
 import bia.model.FunctionDeclaration
 import bia.model.DefinedFunctionValue
+import bia.model.ExternalFunctionDeclaration
 import bia.model.Value
 import bia.model.ValueDeclaration
 
@@ -20,7 +22,7 @@ fun evaluateProgramBody(
 }
 
 fun evaluateBody(
-    outerScope: Scope,
+    outerScope: DynamicScope,
     body: FunctionBody,
 ): Value {
     val finalScope = body.declarations.fold(outerScope) { scope, declaration ->
@@ -36,9 +38,9 @@ fun evaluateBody(
 }
 
 private fun executeDeclaration(
-    scope: Scope,
-    declaration: Declaration,
-): Scope = when (declaration) {
+    scope: DynamicScope,
+    declaration: BodyDeclaration,
+): DynamicScope = when (declaration) {
     is ValueDeclaration -> executeValueDeclaration(
         scope = scope,
         declaration = declaration,
@@ -47,12 +49,13 @@ private fun executeDeclaration(
         scope = scope,
         declaration = declaration,
     )
+    is ExternalFunctionDeclaration -> scope
 }
 
 private fun executeValueDeclaration(
-    scope: Scope,
+    scope: DynamicScope,
     declaration: ValueDeclaration,
-): Scope = scope.extend(
+): DynamicScope = scope.extend(
     name = declaration.givenName,
     value = evaluateExpression(
         scope = scope,
@@ -61,15 +64,15 @@ private fun executeValueDeclaration(
 )
 
 private fun executeFunctionDeclaration(
-    scope: Scope,
+    scope: DynamicScope,
     declaration: FunctionDeclaration,
-): Scope = object {
-    val resultScope: Scope by lazy {
+): DynamicScope = object {
+    val resultScope: DynamicScope by lazy {
         scope.extend(
             name = declaration.givenName,
             value = DefinedFunctionValue(
                 name = declaration.givenName,
-                closure = Scope.delegated { resultScope },
+                closure = DynamicScope.delegated { resultScope },
                 definition = declaration.definition,
             ),
         )
@@ -77,6 +80,6 @@ private fun executeFunctionDeclaration(
 }.resultScope
 
 private fun evaluateExpression(
-    scope: Scope,
+    scope: DynamicScope,
     expression: Expression,
 ): Value = expression.evaluate(scope = scope)

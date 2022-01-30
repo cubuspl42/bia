@@ -1,16 +1,29 @@
 package bia.model
 
-import bia.interpreter.Scope
+import bia.interpreter.DynamicScope
+import bia.type_checker.TypeCheckError
 
 sealed interface Expression {
-    fun evaluate(scope: Scope): Value
+    val type: Type
+
+    fun validate() {
+        type
+    }
+
+    fun evaluate(scope: DynamicScope): Value
 }
 
 data class AdditionExpression(
     val augend: Expression,
     val addend: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (augend.type !is NumberType || addend.type !is NumberType) {
+            throw TypeCheckError("Tried to add expressions of type ${augend.type} and ${addend.type}")
+        } else NumberType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
             scope = scope,
             left = augend,
@@ -22,7 +35,13 @@ data class SubtractionExpression(
     val minuend: Expression,
     val subtrahend: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (minuend.type !is NumberType || subtrahend.type !is NumberType) {
+            throw TypeCheckError("Tried to subtract expressions of type ${minuend.type} and ${subtrahend.type}")
+        } else NumberType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
             scope = scope,
             left = minuend,
@@ -34,7 +53,13 @@ data class MultiplicationExpression(
     val multiplier: Expression,
     val multiplicand: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (multiplier.type !is NumberType || multiplicand.type !is NumberType) {
+            throw TypeCheckError("Tried to multiply expressions of type ${multiplier.type} and ${multiplicand.type}")
+        } else NumberType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
             scope = scope,
             left = multiplier,
@@ -46,7 +71,13 @@ data class DivisionExpression(
     val dividend: Expression,
     val divisor: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (dividend.type !is NumberType || divisor.type !is NumberType) {
+            throw TypeCheckError("Tried to divide expressions of type ${dividend.type} and ${divisor.type}")
+        } else NumberType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
             scope = scope,
             left = dividend,
@@ -58,7 +89,13 @@ data class IntegerDivisionExpression(
     val dividend: Expression,
     val divisor: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (dividend.type !is NumberType || divisor.type !is NumberType) {
+            throw TypeCheckError("Tried to integer-divide expressions of type ${dividend.type} and ${divisor.type}")
+        } else NumberType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
             scope = scope,
             left = dividend,
@@ -70,7 +107,13 @@ data class ReminderExpression(
     val dividend: Expression,
     val divisor: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (dividend.type !is NumberType || divisor.type !is NumberType) {
+            throw TypeCheckError("Tried reminder-divide expressions of type ${dividend.type} and ${divisor.type}")
+        } else NumberType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
             scope = scope,
             left = dividend,
@@ -82,7 +125,13 @@ data class LessThenExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (left.type !is NumberType || right.type !is NumberType) {
+            throw TypeCheckError("Tried compare (<) expressions of type ${left.type} and ${right.type}")
+        } else NumberType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberLogicalExpression(
             scope = scope,
             left = left,
@@ -94,7 +143,13 @@ data class GreaterThenExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (left.type !is NumberType || right.type !is NumberType) {
+            throw TypeCheckError("Tried compare (>) expressions of type ${left.type} and ${right.type}")
+        } else NumberType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberLogicalExpression(
             scope = scope,
             left = left,
@@ -106,7 +161,13 @@ data class OrExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (left.type !is BooleanType || right.type !is BooleanType) {
+            throw TypeCheckError("Tried to perform logical operation (or) on expressions of type ${left.type} and ${right.type}")
+        } else BooleanType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateLogicalBinaryExpression(
             scope = scope,
             left = left,
@@ -118,7 +179,13 @@ data class AndExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        if (left.type !is BooleanType || right.type !is BooleanType) {
+            throw TypeCheckError("Tried to perform logical operation (and) on expressions of type ${left.type} and ${right.type}")
+        } else BooleanType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         evaluateLogicalBinaryExpression(
             scope = scope,
             left = left,
@@ -129,7 +196,13 @@ data class AndExpression(
 data class NotExpression(
     val negated: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value {
+    override val type: Type by lazy {
+        if (negated.type !is BooleanType) {
+            throw TypeCheckError("Tried to perform logical operation (not) on expression of type ${negated.type}")
+        } else BooleanType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value {
         val negatedBoolean = asLogicalValue(value = negated.evaluate(scope = scope))
 
         return BooleanValue(
@@ -142,7 +215,13 @@ data class EqualsExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value {
+    override val type: Type by lazy {
+        if (left.type != right.type) {
+            throw TypeCheckError("Tried to compare expressions of type ${left.type} and ${right.type}")
+        } else BooleanType
+    }
+
+    override fun evaluate(scope: DynamicScope): Value {
         val leftValue = left.evaluate(scope = scope)
         val rightValue = right.evaluate(scope = scope)
 
@@ -154,8 +233,13 @@ data class EqualsExpression(
 
 data class ReferenceExpression(
     val referredName: String,
+    val referredDeclaration: Declaration?,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type by lazy {
+        referredDeclaration?.type ?: throw TypeCheckError("Unresolved reference ($referredName) has no type")
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
         scope.getValue(name = referredName)
             ?: throw UnsupportedOperationException("Unresolved reference at runtime: $referredName")
 }
@@ -164,7 +248,35 @@ data class CallExpression(
     val callee: Expression,
     val arguments: List<Expression>,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value {
+    private val calleeType: FunctionType by lazy {
+        val calleeType = callee.type
+        calleeType as? FunctionType ?: throw TypeCheckError("Tried to call a non-function: $calleeType")
+    }
+
+    override val type: Type by lazy {
+        calleeType.returnType
+    }
+
+    override fun validate() {
+        val argumentDeclarations = calleeType.argumentDeclarations
+
+        val definedArgumentCount = argumentDeclarations.size
+        val passedArgumentCount = arguments.size
+
+        if (passedArgumentCount != definedArgumentCount) {
+            throw TypeCheckError(
+                listOf(
+                    "Function",
+                    if (callee is ReferenceExpression) callee.referredName else "",
+                    "was defined with $definedArgumentCount arguments, $passedArgumentCount passed"
+                ).joinToString(separator = " ")
+            )
+        }
+
+        super.validate()
+    }
+
+    override fun evaluate(scope: DynamicScope): Value {
         val calleeValue = callee.evaluate(scope = scope).asFunctionValue(
             message = "Only functions can be called, tried",
         )
@@ -182,7 +294,9 @@ data class CallExpression(
 data class IntLiteralExpression(
     val value: Long,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type = NumberType
+
+    override fun evaluate(scope: DynamicScope): Value =
         NumberValue(
             value = value.toDouble(),
         )
@@ -191,7 +305,9 @@ data class IntLiteralExpression(
 data class BooleanLiteralExpression(
     val value: Boolean,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value =
+    override val type: Type = BooleanType
+
+    override fun evaluate(scope: DynamicScope): Value =
         BooleanValue(
             value = value,
         )
@@ -202,7 +318,18 @@ data class IfExpression(
     val trueBranch: Expression,
     val falseBranch: Expression,
 ) : Expression {
-    override fun evaluate(scope: Scope): Value {
+    override val type: Type by lazy {
+        val trueBranchType = trueBranch.type
+        val falseBranchType = falseBranch.type
+
+        if (trueBranchType == falseBranchType) {
+            trueBranchType
+        } else {
+            throw TypeCheckError("If expression has incompatible true- and false-branch types: $trueBranchType, $falseBranchType")
+        }
+    }
+
+    override fun evaluate(scope: DynamicScope): Value {
         val guardValue = guard.evaluate(scope = scope).asBooleanValue(
             message = "Guard has to be a boolean",
         )
@@ -215,7 +342,7 @@ data class IfExpression(
 }
 
 private fun evaluateNumberBinaryExpression(
-    scope: Scope,
+    scope: DynamicScope,
     left: Expression,
     right: Expression,
     calculate: (left: Double, right: Double) -> Double,
@@ -229,7 +356,7 @@ private fun evaluateNumberBinaryExpression(
 }
 
 private fun evaluateNumberLogicalExpression(
-    scope: Scope,
+    scope: DynamicScope,
     left: Expression,
     right: Expression,
     calculate: (left: Double, right: Double) -> Boolean,
@@ -243,7 +370,7 @@ private fun evaluateNumberLogicalExpression(
 }
 
 private fun evaluateLogicalBinaryExpression(
-    scope: Scope,
+    scope: DynamicScope,
     left: Expression,
     right: Expression,
     calculate: (left: Boolean, right: Boolean) -> Boolean,

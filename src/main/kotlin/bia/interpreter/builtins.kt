@@ -336,7 +336,7 @@ private val gcdBi = object : FunctionValue() {
     }
 }
 
-val builtinScope = Scope.of(
+val builtinScope = DynamicScope.of(
     values = mapOf(
         "until" to until,
         "to" to to,

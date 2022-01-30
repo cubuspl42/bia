@@ -2,12 +2,16 @@ package bia.parser
 
 import bia.model.AdditionExpression
 import bia.model.AndExpression
+import bia.model.ArgumentDeclaration
+import bia.model.BigIntegerType
+import bia.model.BodyDeclaration
 import bia.model.BooleanLiteralExpression
+import bia.model.BooleanType
 import bia.model.CallExpression
-import bia.model.Declaration
 import bia.model.DivisionExpression
 import bia.model.EqualsExpression
 import bia.model.Expression
+import bia.model.ExternalFunctionDeclaration
 import bia.model.FunctionBody
 import bia.model.FunctionDeclaration
 import bia.model.FunctionDefinition
@@ -18,10 +22,12 @@ import bia.model.IntegerDivisionExpression
 import bia.model.LessThenExpression
 import bia.model.MultiplicationExpression
 import bia.model.NotExpression
+import bia.model.NumberType
 import bia.model.OrExpression
 import bia.model.ReferenceExpression
 import bia.model.ReminderExpression
 import bia.model.SubtractionExpression
+import bia.model.Type
 import bia.model.ValueDeclaration
 import bia.parser.antlr.BiaLexer
 import bia.parser.antlr.BiaParser
@@ -30,59 +36,149 @@ import bia.parser.antlr.BiaParserBaseVisitor
 fun transformProgram(
     parser: BiaParser,
 ): FunctionBody = transformBody(
+    outerScope = StaticScope.of(declarations = emptyMap()),
     body = parser.program().body(),
 )
 
 fun transformBody(
+    outerScope: StaticScope,
     body: BiaParser.BodyContext,
-): FunctionBody = FunctionBody(
-    declarations = body.declaration().map(::transformDeclaration),
-    returned = transformExpression(
-        expression = body.return_().expression(),
-    ),
-)
+): FunctionBody {
+    data class TransformDeclarationsResult(
+        val finalScope: StaticScope,
+        val declarations: List<BodyDeclaration>,
+    )
 
-fun transformDeclaration(
+    fun transformDeclarations(
+        scope: StaticScope,
+        inputDeclarations: List<BiaParser.DeclarationContext>,
+        outputDeclarations: List<BodyDeclaration>,
+    ): TransformDeclarationsResult = inputDeclarations.firstOrNull()?.let {
+
+        val declaration = transformBodyDeclaration(
+            scope = scope,
+            declaration = it,
+        )
+
+        transformDeclarations(
+            scope = scope.extend(name = declaration.givenName, declaration = declaration),
+            inputDeclarations = inputDeclarations.drop(1),
+            outputDeclarations = outputDeclarations + declaration,
+        )
+    } ?: TransformDeclarationsResult(
+        finalScope = scope,
+        declarations = outputDeclarations,
+    )
+
+    val result = transformDeclarations(
+        scope = outerScope,
+        inputDeclarations = body.declaration(),
+        outputDeclarations = emptyList(),
+    )
+
+    val returned = transformExpression(
+        scope = result.finalScope,
+        expression = body.return_().expression(),
+    )
+
+    return FunctionBody(
+        declarations = result.declarations,
+        returned = returned,
+    )
+}
+
+fun transformBodyDeclaration(
+    scope: StaticScope,
     declaration: BiaParser.DeclarationContext,
-): Declaration = object : BiaParserBaseVisitor<Declaration>() {
+): BodyDeclaration = object : BiaParserBaseVisitor<BodyDeclaration>() {
     override fun visitValueDeclaration(
         ctx: BiaParser.ValueDeclarationContext,
     ) = ValueDeclaration(
         givenName = ctx.name.text,
         initializer = transformExpression(
+            scope = scope,
             expression = ctx.initializer,
         ),
     )
 
     override fun visitFunctionDeclaration(
         ctx: BiaParser.FunctionDeclarationContext,
-    ): Declaration = FunctionDeclaration(
-        givenName = ctx.name.text,
-        definition = FunctionDefinition(
-            argumentNames = ctx.argumentListDeclaration().argumentDeclaration().map { it.text },
-            body = transformBody(body = ctx.body()),
+    ): FunctionDeclaration {
+        val argumentDeclarations = transformArgumentDeclarations(
+            argumentListDeclaration = ctx.argumentListDeclaration(),
         )
+
+        return FunctionDeclaration(
+            givenName = ctx.name.text,
+            definition = FunctionDefinition(
+                argumentDeclarations = argumentDeclarations,
+                body = transformBody(
+                    outerScope = scope.extend(
+                        namedDeclarations = argumentDeclarations.map { it.givenName to it },
+                    ),
+                    body = ctx.body(),
+                ),
+            )
+        )
+    }
+
+    override fun visitExternalFunctionDeclaration(
+        ctx: BiaParser.ExternalFunctionDeclarationContext,
+    ) = ExternalFunctionDeclaration(
+        givenName = ctx.name.text,
+        argumentDeclarations = transformArgumentDeclarations(
+            argumentListDeclaration = ctx.argumentListDeclaration(),
+        ),
+        returnType = transformType(ctx.returnType),
     )
 }.visit(declaration)
 
+fun transformArgumentDeclarations(
+    argumentListDeclaration: BiaParser.ArgumentListDeclarationContext,
+): List<ArgumentDeclaration> = argumentListDeclaration.argumentDeclaration().map {
+    ArgumentDeclaration(
+        givenName = it.name.text,
+        type = transformType(expression = it.type()),
+    )
+}
+
 fun transformExpression(
+    scope: StaticScope,
     expression: BiaParser.ExpressionContext,
 ): Expression = object : BiaParserBaseVisitor<Expression>() {
-    override fun visitReference(ctx: BiaParser.ReferenceContext): Expression =
-        ReferenceExpression(referredName = ctx.text)
+    override fun visitReference(ctx: BiaParser.ReferenceContext): Expression {
+        val referredName: String = ctx.text
+
+        return ReferenceExpression(
+            referredName = referredName,
+            referredDeclaration = scope.getDeclaration(name = referredName)
+        )
+    }
 
     override fun visitCallExpression(ctx: BiaParser.CallExpressionContext): Expression =
         CallExpression(
-            callee = transformExpression(expression = ctx.callee),
+            callee = transformExpression(
+                scope = scope,
+                expression = ctx.callee,
+            ),
             arguments = ctx.callArgumentList().expression().map {
-                transformExpression(expression = it)
+                transformExpression(
+                    scope = scope,
+                    expression = it,
+                )
             },
         )
 
     override fun visitEqualsOperation(ctx: BiaParser.EqualsOperationContext): Expression =
         EqualsExpression(
-            left = transformExpression(expression = ctx.left),
-            right = transformExpression(expression = ctx.right),
+            left = transformExpression(
+                scope = scope,
+                expression = ctx.left,
+            ),
+            right = transformExpression(
+                scope = scope,
+                expression = ctx.right,
+            ),
         )
 
     override fun visitIntLiteral(ctx: BiaParser.IntLiteralContext): Expression =
@@ -102,12 +198,20 @@ fun transformExpression(
 
     override fun visitParenExpression(ctx: BiaParser.ParenExpressionContext): Expression =
         transformExpression(
+            scope = scope,
             expression = ctx.expression(),
         )
 
     override fun visitBinaryOperation(ctx: BiaParser.BinaryOperationContext): Expression {
-        val left = transformExpression(expression = ctx.left)
-        val right = transformExpression(expression = ctx.right)
+        val left = transformExpression(
+            scope = scope,
+            expression = ctx.left,
+        )
+
+        val right = transformExpression(
+            scope = scope,
+            expression = ctx.right,
+        )
 
         val operator = ctx.operator
 
@@ -127,7 +231,10 @@ fun transformExpression(
     }
 
     override fun visitUnaryOperation(ctx: BiaParser.UnaryOperationContext): Expression {
-        val argument = transformExpression(expression = ctx.expression())
+        val argument = transformExpression(
+            scope = scope,
+            expression = ctx.expression(),
+        )
 
         val operator = ctx.operator
 
@@ -139,10 +246,27 @@ fun transformExpression(
 
     override fun visitIfExpression(ctx: BiaParser.IfExpressionContext): Expression =
         IfExpression(
-            guard = transformExpression(expression = ctx.guard),
-            trueBranch = transformExpression(expression = ctx.trueBranch),
-            falseBranch = transformExpression(expression = ctx.falseBranch),
+            guard = transformExpression(
+                scope = scope,
+                expression = ctx.guard,
+            ),
+            trueBranch = transformExpression(
+                scope = scope,
+                expression = ctx.trueBranch,
+            ),
+            falseBranch = transformExpression(
+                scope = scope,
+                expression = ctx.falseBranch,
+            ),
         )
+}.visit(expression)
 
+fun transformType(
+    expression: BiaParser.TypeContext,
+): Type = object : BiaParserBaseVisitor<Type>() {
+    override fun visitNumberType(ctx: BiaParser.NumberTypeContext) = NumberType
 
+    override fun visitBooleanType(ctx: BiaParser.BooleanTypeContext) = BooleanType
+
+    override fun visitBigIntegerType(ctx: BiaParser.BigIntegerTypeContext) = BigIntegerType
 }.visit(expression)
