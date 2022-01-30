@@ -134,7 +134,7 @@ data class LessThenExpression(
     override val type: Type by lazy {
         if (left.type !is NumberType || right.type !is NumberType) {
             throw TypeCheckError("Tried compare (<) expressions of type ${left.type} and ${right.type}")
-        } else NumberType
+        } else BooleanType
     }
 
     override fun evaluate(scope: DynamicScope): Value =
@@ -152,7 +152,7 @@ data class GreaterThenExpression(
     override val type: Type by lazy {
         if (left.type !is NumberType || right.type !is NumberType) {
             throw TypeCheckError("Tried compare (>) expressions of type ${left.type} and ${right.type}")
-        } else NumberType
+        } else BooleanType
     }
 
     override fun evaluate(scope: DynamicScope): Value =

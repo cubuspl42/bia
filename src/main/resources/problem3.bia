@@ -3,12 +3,12 @@
 
 val N = 600851475143
 
-def filterOutMultiplesOf(l, n) {
-    def isMultiple(i) {
-        return (i > n) and (i % n == 0)
+def filterOutMultiplesOf(l : List<Number>, n : Number) {
+    def isMultiple(i : Number) {
+        return (i > n) and ((i % n) == 0)
     }
 
-    def isNotMultiple(i) {
+    def isNotMultiple(i : Number) {
         return (not (isMultiple(i)))
     }
 
@@ -16,8 +16,8 @@ def filterOutMultiplesOf(l, n) {
 }
 
 // O(n * sqrt(n))
-def buildPrimesBelow(n) {
-    def accumulate(l, i) {
+def buildPrimesBelow(n : Number) {
+    def accumulate(l : List<Number>, i : Number) {
         return filterOutMultiplesOf(l, i)
     }
 
@@ -27,7 +27,7 @@ def buildPrimesBelow(n) {
 // O(sqrt(N) * sqrt(sqrt(N)))
 val primesBelowSqrtN = buildPrimesBelow(sqrt(N))
 
-def isFactorOfN(m) {
+def isFactorOfN(m : Number) {
     return N % m == 0
 }
 

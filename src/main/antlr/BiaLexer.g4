@@ -39,7 +39,7 @@ Gt                      : '>' ;
 // Other
 Whitespace              : (' ' | '\n') -> skip ;
 LineComment             : '//' ~[\r\n]* -> skip ;
-Identifier              : [a-z] ([a-zA-Z1-9] | ':')* ;
+Identifier              : [a-zA-Z] ([a-zA-Z1-9] | ':')* ;
 LeftParen               : '(' ;
 RightParen              : ')' ;
 LeftBrace               : '{' ;
