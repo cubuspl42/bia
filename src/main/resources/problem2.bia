@@ -1,4 +1,4 @@
-def calcFibSeqFrom(a, b) {
+def calcFibSeqFrom(a : Number, b : Number) : Sequence<Number> {
     val c = a + b
 
     def buildTail() {
@@ -12,13 +12,13 @@ def calcFibSeq() {
     return concat:Sq(seqOf(1, 2), calcFibSeqFrom(1, 2))
 }
 
-def isSmall(n) {
+def isSmall(n : Number) {
     return n < 4000000
 }
 
 val smallFibs = takeWhile:Sq(calcFibSeq(), isSmall)
 
-def isEven(n) {
+def isEven(n : Number) {
     return n % 2 == 0
 }
 

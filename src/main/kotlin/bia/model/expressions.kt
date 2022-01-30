@@ -1,9 +1,15 @@
 package bia.model
 
 import bia.interpreter.DynamicScope
+import bia.parser.ClosedDeclaration
+import bia.parser.OpenFunctionDeclaration
+import bia.parser.ScopedDeclaration
 import bia.type_checker.TypeCheckError
 
 sealed interface Expression {
+    val declaredType: Type?
+        get() = null
+
     val type: Type
 
     fun validate() {
@@ -233,10 +239,17 @@ data class EqualsExpression(
 
 data class ReferenceExpression(
     val referredName: String,
-    val referredDeclaration: Declaration?,
+    val referredDeclaration: ScopedDeclaration?,
 ) : Expression {
     override val type: Type by lazy {
-        referredDeclaration?.type ?: throw TypeCheckError("Unresolved reference ($referredName) has no type")
+        val referredDeclaration =
+            this.referredDeclaration ?: throw TypeCheckError("Unresolved reference ($referredName) has no type")
+
+        when (referredDeclaration) {
+            is ClosedDeclaration -> referredDeclaration.declaration.type
+            is OpenFunctionDeclaration -> referredDeclaration.functionDeclaration.explicitType
+                ?: throw TypeCheckError("Recursively referenced function $referredName has no explicit return type")
+        }
     }
 
     override fun evaluate(scope: DynamicScope): Value =

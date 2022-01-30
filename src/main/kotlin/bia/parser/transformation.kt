@@ -57,14 +57,16 @@ fun transformBody(
         inputDeclarations: List<BiaParser.DeclarationContext>,
         outputDeclarations: List<BodyDeclaration>,
     ): TransformDeclarationsResult = inputDeclarations.firstOrNull()?.let {
-
         val declaration = transformBodyDeclaration(
             scope = scope,
             declaration = it,
         )
 
         transformDeclarations(
-            scope = scope.extend(name = declaration.givenName, declaration = declaration),
+            scope = scope.extendClosed(
+                name = declaration.givenName,
+                declaration = declaration,
+            ),
             inputDeclarations = inputDeclarations.drop(1),
             outputDeclarations = outputDeclarations + declaration,
         )
@@ -107,22 +109,44 @@ fun transformBodyDeclaration(
     override fun visitFunctionDeclaration(
         ctx: BiaParser.FunctionDeclarationContext,
     ): FunctionDeclaration {
+        val functionGivenName = ctx.name.text
+
         val argumentDeclarations = transformArgumentDeclarations(
             argumentListDeclaration = ctx.argumentListDeclaration(),
         )
 
-        return FunctionDeclaration(
-            givenName = ctx.name.text,
-            definition = FunctionDefinition(
-                argumentDeclarations = argumentDeclarations,
-                body = transformBody(
-                    outerScope = scope.extend(
-                        namedDeclarations = argumentDeclarations.map { it.givenName to it },
-                    ),
-                    body = ctx.body(),
-                ),
-            )
-        )
+        val explicitReturnType = ctx.explicitReturnType?.let {
+            transformType(type = it)
+        }
+
+        return object {
+            val functionDeclaration: FunctionDeclaration by lazy {
+                FunctionDeclaration(
+                    givenName = functionGivenName,
+                    buildDefinition = {
+                        FunctionDefinition(
+                            argumentDeclarations = argumentDeclarations,
+                            explicitReturnType = explicitReturnType,
+                            body = transformBody(
+                                outerScope = scope
+                                    .extendOpen(
+                                        name = functionGivenName,
+                                        declaration = functionDeclaration,
+                                    )
+                                    .extendClosed(
+                                        namedDeclarations = argumentDeclarations.map { it.givenName to it },
+                                    ),
+                                body = ctx.body(),
+                            ),
+                        )
+                    }
+                )
+            }
+
+            init {
+                functionDeclaration.definition
+            }
+        }.functionDeclaration
     }
 
     override fun visitExternalFunctionDeclaration(
@@ -154,7 +178,7 @@ fun transformExpression(
 
         return ReferenceExpression(
             referredName = referredName,
-            referredDeclaration = scope.getDeclaration(name = referredName)
+            referredDeclaration = scope.getScopedDeclaration(name = referredName)
         )
     }
 

@@ -3,3 +3,15 @@ external def until(start : Number, end : Number): List<Number>
 external def filter(l : List<Number>, test : (e : Number) : Boolean): List<Number>
 
 external def mul:Bi(x : BigInteger, y : BigInteger): BigInteger
+
+external def consLazy(head : Number, tail : () : Sequence<Number>): Sequence<Number>
+
+external def concat:Sq(a : Sequence<Number>, b : Sequence<Number>): Sequence<Number>
+
+external def takeWhile:Sq(s : Sequence<Number>, test : (n : Number) : Boolean): Sequence<Number>
+
+external def filter:Sq(s : Sequence<Number>, test : (e : Number) : Boolean): Sequence<Number>
+
+external def sum:Sq(s : Sequence<Number>): Number
+
+external def seqOf(e1 : Number, e2 : Number): Sequence<Number>

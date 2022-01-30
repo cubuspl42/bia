@@ -24,10 +24,15 @@ data class ValueDeclaration(
     }
 }
 
-data class FunctionDeclaration(
+class FunctionDeclaration(
     override val givenName: String,
-    val definition: FunctionDefinition,
+    val buildDefinition: () -> FunctionDefinition,
 ) : BodyDeclaration {
+    val definition by lazy { buildDefinition() }
+
+    val explicitType: FunctionType?
+        get() = definition.explicitType
+
     override val type: FunctionType by lazy {
         definition.type
     }
@@ -63,10 +68,18 @@ data class ArgumentDeclaration(
 
 data class FunctionDefinition(
     val argumentDeclarations: List<ArgumentDeclaration>,
+    val explicitReturnType: Type?,
     val body: FunctionBody,
 ) {
-    val type: FunctionType by lazy {
+    val explicitType: FunctionType? = explicitReturnType?.let {
         FunctionType(
+            argumentDeclarations = argumentDeclarations,
+            returnType = it,
+        )
+    }
+
+    val type: FunctionType by lazy {
+        explicitType ?: FunctionType(
             argumentDeclarations = argumentDeclarations,
             returnType = body.returned.type,
         )
@@ -82,6 +95,17 @@ data class FunctionDefinition(
         }
 
         body.validate()
+
+        val explicitReturnType = this.explicitReturnType
+
+        if (explicitReturnType != null) {
+            val inferredReturnType = body.returned.type
+
+            if (!inferredReturnType.isAssignableTo(explicitReturnType)) {
+                throw TypeCheckError("Inferred return type ${inferredReturnType.toPrettyString()} " +
+                        "is not compatible with the explicitly declared return type: ${explicitReturnType.toPrettyString()}")
+            }
+        }
     }
 }
 

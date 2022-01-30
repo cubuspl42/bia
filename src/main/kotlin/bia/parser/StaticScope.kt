@@ -1,31 +1,46 @@
 package bia.parser
 
 import bia.model.Declaration
+import bia.model.FunctionDeclaration
+
+sealed interface ScopedDeclaration
+
+data class ClosedDeclaration(
+    val declaration: Declaration,
+) : ScopedDeclaration
+
+data class OpenFunctionDeclaration(
+    val functionDeclaration: FunctionDeclaration,
+) : ScopedDeclaration
 
 abstract class StaticScope {
     companion object {
-        fun of(declarations: Map<String, Declaration>): StaticScope = SimpleStaticScope(
+        fun of(
+            declarations: Map<String, ScopedDeclaration>,
+        ): StaticScope = SimpleStaticScope(
             declarations = declarations,
         )
-
-        fun delegated(delegate: () -> StaticScope): StaticScope = object : StaticScope() {
-            override val declarations: Map<String, Declaration> by lazy { delegate().declarations }
-        }
     }
 
-    abstract val declarations: Map<String, Declaration>
+    abstract val declarations: Map<String, ScopedDeclaration>
 
-    fun extend(name: String, declaration: Declaration) = StaticScope.of(
-        declarations = declarations + (name to declaration)
+    fun extendClosed(name: String, declaration: Declaration) = StaticScope.of(
+        declarations = declarations + (name to ClosedDeclaration(declaration)),
     )
 
-    fun extend(namedDeclarations: List<Pair<String, Declaration>>) = StaticScope.of(
-        declarations = declarations + namedDeclarations.toMap()
+    fun extendClosed(namedDeclarations: List<Pair<String, Declaration>>) = StaticScope.of(
+        declarations = declarations + namedDeclarations.associate { (name, declaration) ->
+            name to ClosedDeclaration(declaration)
+        },
     )
 
-    fun getDeclaration(name: String): Declaration? = declarations[name]
+    fun extendOpen(name: String, declaration: FunctionDeclaration) = StaticScope.of(
+        declarations = declarations + (name to OpenFunctionDeclaration(declaration)),
+    )
+
+    fun getScopedDeclaration(name: String): ScopedDeclaration? = declarations[name]
 }
 
 data class SimpleStaticScope(
-    override val declarations: Map<String, Declaration>,
+    override val declarations: Map<String, ScopedDeclaration>,
 ) : StaticScope()

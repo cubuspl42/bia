@@ -37,7 +37,7 @@ callArgumentList: (expression (Comma expression)*)? ;
 
 valueDeclaration : Val name=Identifier Assign initializer=expression ;
 
-functionDeclaration : Def name=Identifier LeftParen argumentListDeclaration RightParen LeftBrace body RightBrace ;
+functionDeclaration : Def name=Identifier LeftParen argumentListDeclaration RightParen (Colon explicitReturnType=type)? LeftBrace body RightBrace ;
 
 externalFunctionDeclaration : External Def name=Identifier LeftParen argumentListDeclaration RightParen Colon returnType=type;
 
