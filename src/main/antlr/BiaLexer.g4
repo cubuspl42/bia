@@ -12,10 +12,12 @@ And                     : 'and' ;
 Not                     : 'not' ;
 External                : 'external' ;
 
-// Built-in types
+// Built-in types / type constructors
 NumberType              : 'Number' ;
 BooleanType             : 'Boolean' ;
 BigIntegerType          : 'BigInteger' ;
+ListTypeConstructor     : 'List' ;
+SequenceTypeConstructor : 'Sequence' ;
 
 // Literals
 IntLiteral              : '0'|[1-9][0-9]* ;

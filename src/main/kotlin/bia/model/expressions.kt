@@ -273,6 +273,15 @@ data class CallExpression(
             )
         }
 
+        arguments.zip(argumentDeclarations).forEachIndexed { index, (argument, argumentDeclaration) ->
+            if (!argument.type.isAssignableTo(argumentDeclaration.type)) {
+                throw TypeCheckError(
+                    "Argument #${index + 1} has type ${argument.type.toPrettyString()} " +
+                            "which can't be assigned to ${argumentDeclaration.type.toPrettyString()}",
+                )
+            }
+        }
+
         super.validate()
     }
 

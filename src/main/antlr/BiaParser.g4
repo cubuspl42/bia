@@ -26,7 +26,12 @@ expression : left=expression operator=Multiplication right=expression # binaryOp
 
 type : NumberType # numberType
      | BooleanType # booleanType
-     | BigIntegerType # bigIntegerType ;
+     | BigIntegerType # bigIntegerType
+     | LeftParen argumentListDeclaration RightParen Colon returnType=type # functionType
+     | typeConstructor Lt type Gt # constructedType ;
+
+typeConstructor : ListTypeConstructor # listConstructor
+                | SequenceTypeConstructor # sequenceConstructor ;
 
 callArgumentList: (expression (Comma expression)*)? ;
 

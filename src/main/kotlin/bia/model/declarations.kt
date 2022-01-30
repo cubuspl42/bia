@@ -56,7 +56,10 @@ data class ExternalFunctionDeclaration(
 data class ArgumentDeclaration(
     override val givenName: String,
     override val type: Type,
-) : Declaration
+) : Declaration {
+    fun toPrettyString(): String =
+        "$givenName : ${type.toPrettyString()}"
+}
 
 data class FunctionDefinition(
     val argumentDeclarations: List<ArgumentDeclaration>,

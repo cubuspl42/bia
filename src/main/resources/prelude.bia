@@ -1,1 +1,5 @@
+external def until(start : Number, end : Number): List<Number>
+
+external def filter(l : List<Number>, test : (e : Number) : Boolean): List<Number>
+
 external def mul:Bi(x : BigInteger, y : BigInteger): BigInteger

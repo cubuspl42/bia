@@ -15,17 +15,20 @@ import bia.model.ExternalFunctionDeclaration
 import bia.model.FunctionBody
 import bia.model.FunctionDeclaration
 import bia.model.FunctionDefinition
+import bia.model.FunctionType
 import bia.model.GreaterThenExpression
 import bia.model.IfExpression
 import bia.model.IntLiteralExpression
 import bia.model.IntegerDivisionExpression
 import bia.model.LessThenExpression
+import bia.model.ListType
 import bia.model.MultiplicationExpression
 import bia.model.NotExpression
 import bia.model.NumberType
 import bia.model.OrExpression
 import bia.model.ReferenceExpression
 import bia.model.ReminderExpression
+import bia.model.SequenceType
 import bia.model.SubtractionExpression
 import bia.model.Type
 import bia.model.ValueDeclaration
@@ -138,7 +141,7 @@ fun transformArgumentDeclarations(
 ): List<ArgumentDeclaration> = argumentListDeclaration.argumentDeclaration().map {
     ArgumentDeclaration(
         givenName = it.name.text,
-        type = transformType(expression = it.type()),
+        type = transformType(type = it.type()),
     )
 }
 
@@ -262,11 +265,39 @@ fun transformExpression(
 }.visit(expression)
 
 fun transformType(
-    expression: BiaParser.TypeContext,
+    type: BiaParser.TypeContext,
 ): Type = object : BiaParserBaseVisitor<Type>() {
     override fun visitNumberType(ctx: BiaParser.NumberTypeContext) = NumberType
 
     override fun visitBooleanType(ctx: BiaParser.BooleanTypeContext) = BooleanType
 
     override fun visitBigIntegerType(ctx: BiaParser.BigIntegerTypeContext) = BigIntegerType
-}.visit(expression)
+
+    override fun visitFunctionType(ctx: BiaParser.FunctionTypeContext) = FunctionType(
+        argumentDeclarations = transformArgumentDeclarations(
+            argumentListDeclaration = ctx.argumentListDeclaration(),
+        ),
+        returnType = transformType(type = ctx.returnType),
+    )
+
+    override fun visitConstructedType(ctx: BiaParser.ConstructedTypeContext): Type {
+        val typeConstructor: BiaParser.TypeConstructorContext = ctx.typeConstructor()
+        val argumentType = transformType(type = ctx.type())
+
+        return transformTypeConstructor(
+            typeConstructor = typeConstructor,
+            argumentType = argumentType
+        )
+    }
+}.visit(type)
+
+fun transformTypeConstructor(
+    typeConstructor: BiaParser.TypeConstructorContext,
+    argumentType: Type,
+): Type = object : BiaParserBaseVisitor<Type>() {
+    override fun visitListConstructor(ctx: BiaParser.ListConstructorContext) =
+        ListType(elementType = argumentType)
+
+    override fun visitSequenceConstructor(ctx: BiaParser.SequenceConstructorContext) =
+        SequenceType(elementType = argumentType)
+}.visit(typeConstructor)

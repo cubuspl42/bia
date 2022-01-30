@@ -1,4 +1,4 @@
-def f(n) {
+def f(n : Number) {
     return (n % 3 == 0) or (n % 5 == 0)
 }
 
