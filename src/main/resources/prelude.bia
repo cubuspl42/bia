@@ -23,3 +23,7 @@ external def fold:L(
 ): List<Number>
 
 external def sqrt(x : Number): Number
+
+external def firstWhereOrNull(l : List<Number>, test : (e : Number) : Boolean): Number?
+
+external def orElse(n : Number?, default : () : Number): Number

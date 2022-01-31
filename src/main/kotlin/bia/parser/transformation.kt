@@ -24,6 +24,7 @@ import bia.model.LessThenExpression
 import bia.model.ListType
 import bia.model.MultiplicationExpression
 import bia.model.NotExpression
+import bia.model.NullableType
 import bia.model.NumberType
 import bia.model.OrExpression
 import bia.model.ReferenceExpression
@@ -313,6 +314,10 @@ fun transformType(
             argumentType = argumentType
         )
     }
+
+    override fun visitNullableType(ctx: BiaParser.NullableTypeContext) = NullableType(
+        baseType = transformType(type = ctx.type()),
+    )
 }.visit(type)
 
 fun transformTypeConstructor(

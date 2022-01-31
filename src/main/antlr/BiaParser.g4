@@ -28,7 +28,8 @@ type : NumberType # numberType
      | BooleanType # booleanType
      | BigIntegerType # bigIntegerType
      | LeftParen argumentListDeclaration RightParen Colon returnType=type # functionType
-     | typeConstructor Lt type Gt # constructedType ;
+     | typeConstructor Lt type Gt # constructedType
+     | type QuestionMark  # nullableType ;
 
 typeConstructor : ListTypeConstructor # listConstructor
                 | SequenceTypeConstructor # sequenceConstructor ;

@@ -3,8 +3,8 @@
 
 val N = 600851475143
 
-def findSmallestFactor(n) {
-    def isFactor(i) {
+def findSmallestFactor(n : Number) {
+    def isFactor(i : Number) {
         return n % i == 0
     }
 
@@ -18,11 +18,11 @@ def findSmallestFactor(n) {
     return orElse(smallestFactorBelowSqrtOrNull, returnN)
 }
 
-def findSmallestPrimeFactor(n) {
+def findSmallestPrimeFactor(n : Number) {
     return findSmallestFactor(n)
 }
 
-def findLargestPrimeFactor(n) {
+def findLargestPrimeFactor(n : Number): Number {
      val smallestPrimeFactor = findSmallestPrimeFactor(n)
 
      return if (smallestPrimeFactor < n) then

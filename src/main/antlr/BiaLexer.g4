@@ -46,3 +46,4 @@ LeftBrace               : '{' ;
 RightBrace              : '}' ;
 Comma                   : ',' ;
 Colon                   : ':' ;
+QuestionMark            : '?' ;

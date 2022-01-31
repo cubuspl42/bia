@@ -3,8 +3,16 @@ package bia.model
 sealed interface Type {
     fun toPrettyString(): String
 
-    fun isAssignableTo(other: Type): Boolean = this == other
+    fun isAssignableDirectlyTo(other: Type): Boolean = false
 }
+
+@Suppress("IntroduceWhenSubject")
+fun Type.isAssignableTo(other: Type): Boolean =
+    when {
+        this == other -> true
+        other is NullableType -> isAssignableTo(other.baseType)
+        else -> isAssignableDirectlyTo(other)
+    }
 
 object NumberType : Type {
     override fun toPrettyString(): String = "Number"
@@ -28,6 +36,11 @@ data class SequenceType(val elementType: Type) : Type {
     )
 }
 
+data class NullableType(val baseType: Type) : Type {
+    override fun toPrettyString(): String =
+        "${baseType.toPrettyString()}?"
+}
+
 private fun typeConstructorToPrettyString(
     typeConstructor: String,
     argumentType: Type,
@@ -42,7 +55,7 @@ data class FunctionType(
     val argumentDeclarations: List<ArgumentDeclaration>,
     val returnType: Type,
 ) : Type {
-    override fun isAssignableTo(other: Type): Boolean = if (other is FunctionType) {
+    override fun isAssignableDirectlyTo(other: Type): Boolean = if (other is FunctionType) {
         fun areArgumentsAssignable() = argumentDeclarations.zip(other.argumentDeclarations)
             .all { (argumentDeclaration, otherArgumentDeclaration) ->
                 argumentDeclaration.type.isAssignableTo(otherArgumentDeclaration.type)
