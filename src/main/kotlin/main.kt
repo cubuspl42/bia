@@ -1,18 +1,20 @@
 import bia.interpreter.evaluateProgramBody
+import bia.Prelude
 import bia.parser.parseProgram
 
 const val sourceName = "problem4.bia"
 
 fun main() {
-    val prelude = getResourceAsText("prelude.bia") ?: throw RuntimeException("Couldn't load the prelude")
+    val preludeSource = getResourceAsText("prelude.bia") ?: throw RuntimeException("Couldn't load the prelude")
+
+    val prelude = Prelude.load(preludeSource = preludeSource)
 
     val source = getResourceAsText(sourceName) ?: throw RuntimeException("Couldn't load the source file")
 
-    val joinedSource = listOf(prelude, source).joinToString(separator = "\n\n")
-
     val programBody = parseProgram(
+        prelude = prelude,
         sourceName = sourceName,
-        source = joinedSource,
+        source = source,
     )
 
     programBody.validate()

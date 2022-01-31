@@ -38,9 +38,10 @@ import bia.parser.antlr.BiaParser
 import bia.parser.antlr.BiaParserBaseVisitor
 
 fun transformProgram(
+    outerScope: StaticScope,
     parser: BiaParser,
 ): FunctionBody = transformBody(
-    outerScope = StaticScope.of(declarations = emptyMap()),
+    outerScope = outerScope,
     body = parser.program().body(),
 )
 
@@ -48,37 +49,9 @@ fun transformBody(
     outerScope: StaticScope,
     body: BiaParser.BodyContext,
 ): FunctionBody {
-    data class TransformDeclarationsResult(
-        val finalScope: StaticScope,
-        val declarations: List<BodyDeclaration>,
-    )
-
-    fun transformDeclarations(
-        scope: StaticScope,
-        inputDeclarations: List<BiaParser.DeclarationContext>,
-        outputDeclarations: List<BodyDeclaration>,
-    ): TransformDeclarationsResult = inputDeclarations.firstOrNull()?.let {
-        val declaration = transformBodyDeclaration(
-            scope = scope,
-            declaration = it,
-        )
-
-        transformDeclarations(
-            scope = scope.extendClosed(
-                name = declaration.givenName,
-                declaration = declaration,
-            ),
-            inputDeclarations = inputDeclarations.drop(1),
-            outputDeclarations = outputDeclarations + declaration,
-        )
-    } ?: TransformDeclarationsResult(
-        finalScope = scope,
-        declarations = outputDeclarations,
-    )
-
     val result = transformDeclarations(
         scope = outerScope,
-        inputDeclarations = body.declaration(),
+        inputDeclarations = body.declarationList().declaration(),
         outputDeclarations = emptyList(),
     )
 
@@ -92,6 +65,34 @@ fun transformBody(
         returned = returned,
     )
 }
+
+data class TransformDeclarationsResult(
+    val finalScope: StaticScope,
+    val declarations: List<BodyDeclaration>,
+)
+
+fun transformDeclarations(
+    scope: StaticScope,
+    inputDeclarations: List<BiaParser.DeclarationContext>,
+    outputDeclarations: List<BodyDeclaration>,
+): TransformDeclarationsResult = inputDeclarations.firstOrNull()?.let {
+    val declaration = transformBodyDeclaration(
+        scope = scope,
+        declaration = it,
+    )
+
+    transformDeclarations(
+        scope = scope.extendClosed(
+            name = declaration.givenName,
+            declaration = declaration,
+        ),
+        inputDeclarations = inputDeclarations.drop(1),
+        outputDeclarations = outputDeclarations + declaration,
+    )
+} ?: TransformDeclarationsResult(
+    finalScope = scope,
+    declarations = outputDeclarations,
+)
 
 fun transformBodyDeclaration(
     scope: StaticScope,

@@ -48,6 +48,8 @@ argumentDeclaration: name=Identifier Colon type;
 
 declaration : valueDeclaration | functionDeclaration | externalFunctionDeclaration ;
 
-body : declaration* return_ ;
+declarationList : declaration* ;
+
+body : declarationList return_ ;
 
 return_ : Return expression ;
