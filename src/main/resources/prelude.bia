@@ -1,5 +1,7 @@
 external def until(start : Number, end : Number): List<Number>
 
+external def to(start : Number, end : Number): List<Number>
+
 external def filter(l : List<Number>, test : (e : Number) : Boolean): List<Number>
 
 external def mul:Bi(x : BigInteger, y : BigInteger): BigInteger
@@ -27,3 +29,25 @@ external def sqrt(x : Number): Number
 external def firstWhereOrNull(l : List<Number>, test : (e : Number) : Boolean): Number?
 
 external def orElse(n : Number?, default : () : Number): Number
+
+external def product:L2(
+    l1 : List<Number>,
+    l2 : List<Number>,
+    transform : (e1 : Number, e2 : Number) : Number
+): List<Number>
+
+external def concat:L(a : List<Number>, b : List<Number>): List<Number>
+
+external def listOf(e1 : Number): List<Number>
+
+external def drop:L(l : List<Number>, n : Number): List<Number>
+
+external def dropLast:L(l : List<Number>, n : Number): List<Number>
+
+external def size:L(l : List<Number>): Number
+
+external def first:L(l : List<Number>): Number
+
+external def last:L(l : List<Number>): Number
+
+external def max:L(l : List<Number>): Number

@@ -5,7 +5,7 @@
 
 val threeDigitNumbers = to(100, 999)
 
-def multiply(a, b) {
+def multiply(a : Number, b : Number) {
     return a * b
 }
 
@@ -15,12 +15,12 @@ val candidates = product:L2(
    multiply
 )
 
-def extractDigits(n) {
+def extractDigits(n : Number) {
     return if (n < 10) then listOf(n)
     else (concat:L(extractDigits(n ~/ 10), listOf(n % 10)))
 }
 
-def isListPalindrome(l) {
+def isListPalindrome(l : List<Number>): Boolean {
     def recurse() {
         val fst = first:L(l)
         val lst = last:L(l)
@@ -33,7 +33,7 @@ def isListPalindrome(l) {
     else (recurse())
 }
 
-def isNumberPalindrome(n) {
+def isNumberPalindrome(n : Number) {
     return isListPalindrome(extractDigits(n))
 }
 
