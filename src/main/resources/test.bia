@@ -2,6 +2,10 @@ def <A> listId(l : List<A>) {
     return l
 }
 
+val foo = (a : Number, b : Boolean) -> Number => {
+    return if (b) then a + 1 else a
+}
+
 def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
     def recurse(): List<B> {
         val fst = first:L<A>(l)
@@ -25,4 +29,6 @@ val l2 = listId<Number>(l1)
 
 val l3 = map<Number, Boolean>(l1, mul2)
 
-return l3
+val n = foo(1, true)
+
+return n

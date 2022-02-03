@@ -8,7 +8,7 @@ typeExpression
     : NumberType # numberType
     | BooleanType # booleanType
     | BigIntegerType # bigIntegerType
-    | LeftParen argumentListDeclaration RightParen Colon returnType=typeExpression # functionType
+    | argumentListDeclaration Colon returnType=typeExpression # functionType
     | typeConstructor Lt typeExpression Gt # constructedType
     | typeExpression QuestionMark  # nullableType
     | name=Identifier # genericArgumentReference ;
@@ -34,7 +34,8 @@ expression
     | TrueLiteral # trueLiteral
     | FalseLiteral # falseLiteral
     | referenceExpression # reference
-    | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression ;
+    | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
+    | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow LeftBrace body RightBrace # lambdaExpression ;
 
 referenceExpression : referredName=Identifier ;
 
@@ -45,13 +46,13 @@ callArgumentList: (expression (Comma expression)*)? ;
 
 valueDeclaration : Val name=Identifier Assign initializer=expression ;
 
-functionDeclaration : External? Def genericArgumentListDeclaration? name=Identifier LeftParen argumentListDeclaration RightParen (Colon explicitReturnType=typeExpression)? (LeftBrace body RightBrace)? ;
+functionDeclaration : External? Def genericArgumentListDeclaration? name=Identifier argumentListDeclaration (Colon explicitReturnType=typeExpression)? (LeftBrace body RightBrace)? ;
 
 genericArgumentListDeclaration : Lt (generitArgumentDeclaration (Comma generitArgumentDeclaration)*)? Gt ;
 
 generitArgumentDeclaration : name=Identifier ;
 
-argumentListDeclaration : (argumentDeclaration (Comma argumentDeclaration)*)? ;
+argumentListDeclaration : LeftParen (argumentDeclaration (Comma argumentDeclaration)*)? RightParen ;
 
 argumentDeclaration: name=Identifier Colon typeExpression;
 

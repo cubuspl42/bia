@@ -19,6 +19,7 @@ import bia.model.GreaterThenExpression
 import bia.model.IfExpression
 import bia.model.IntLiteralExpression
 import bia.model.IntegerDivisionExpression
+import bia.model.LambdaExpression
 import bia.model.LessThenExpression
 import bia.model.ListType
 import bia.model.MultiplicationExpression
@@ -47,6 +48,27 @@ fun transformProgram(
 )
 
 fun transformBody(
+    outerScope: StaticScope,
+    body: BiaParser.BodyContext,
+): FunctionBody {
+    val result = transformDeclarations(
+        scope = outerScope,
+        inputDeclarations = body.declarationList().declaration(),
+        outputDeclarations = emptyList(),
+    )
+
+    val returned = transformExpression(
+        scope = result.finalScope,
+        expression = body.return_().expression(),
+    )
+
+    return FunctionBody(
+        declarations = result.declarations,
+        returned = returned,
+    )
+}
+
+fun transformFunction(
     outerScope: StaticScope,
     body: BiaParser.BodyContext,
 ): FunctionBody {
@@ -118,8 +140,7 @@ fun transformBodyDeclaration(
 
         val (typeVariables, scopeWithTypeVariables) = transformTypeVariableDeclarations(
             scope = scope,
-            genericArgumentDeclarations = ctx.genericArgumentListDeclaration()?.generitArgumentDeclaration()
-                ?: emptyList(),
+            genericArgumentDeclarationList = ctx.genericArgumentListDeclaration(),
         )
 
         val argumentDeclarations = transformArgumentDeclarations(
@@ -196,8 +217,10 @@ data class TransformTypeVariableDeclarationsResult(
 
 fun transformTypeVariableDeclarations(
     scope: StaticScope,
-    genericArgumentDeclarations: List<BiaParser.GeneritArgumentDeclarationContext>,
+    genericArgumentDeclarationList: BiaParser.GenericArgumentListDeclarationContext?,
 ): TransformTypeVariableDeclarationsResult {
+    val genericArgumentDeclarations = genericArgumentDeclarationList?.generitArgumentDeclaration() ?: emptyList()
+
     fun transformRecursively(
         baseResult: TransformTypeVariableDeclarationsResult,
         genericArgumentDeclarations: List<BiaParser.GeneritArgumentDeclarationContext>,
@@ -362,6 +385,39 @@ fun transformExpression(
                 expression = ctx.falseBranch,
             ),
         )
+
+    override fun visitLambdaExpression(ctx: BiaParser.LambdaExpressionContext): Expression {
+        val (typeVariables, scopeWithTypeVariables) = transformTypeVariableDeclarations(
+            scope = scope,
+            genericArgumentDeclarationList = ctx.genericArgumentListDeclaration(),
+        )
+
+        val argumentDeclarations = transformArgumentDeclarations(
+            scope = scopeWithTypeVariables,
+            argumentListDeclaration = ctx.argumentListDeclaration(),
+        )
+
+        val explicitReturnType = ctx.explicitReturnType?.let {
+            transformType(
+                scope = scopeWithTypeVariables,
+                type = it,
+            )
+        }
+
+        val body = transformBody(
+            outerScope = scopeWithTypeVariables.extendClosed(
+                namedDeclarations = argumentDeclarations.map { it.givenName to it },
+            ),
+            body = ctx.body(),
+        )
+
+        return LambdaExpression(
+            typeVariables = typeVariables,
+            argumentDeclarations = argumentDeclarations,
+            explicitReturnType = explicitReturnType,
+            body = body,
+        )
+    }
 }.visit(expression)
 
 fun transformReferenceExpression(

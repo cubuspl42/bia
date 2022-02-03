@@ -384,6 +384,27 @@ data class IfExpression(
     }
 }
 
+data class LambdaExpression(
+    val typeVariables: List<TypeVariable>,
+    val argumentDeclarations: List<ArgumentDeclaration>,
+    val explicitReturnType: Type?,
+    val body: FunctionBody,
+) : Expression {
+    override val type: Type by lazy {
+        FunctionType(
+            typeVariables = typeVariables,
+            argumentDeclarations = argumentDeclarations,
+            returnType = explicitReturnType ?: body.returned.type,
+        )
+    }
+
+    override fun evaluate(scope: DynamicScope): Value = DefinedFunctionValue(
+        closure = scope,
+        argumentDeclarations = argumentDeclarations,
+        body = body,
+    )
+}
+
 private fun evaluateNumberBinaryExpression(
     scope: DynamicScope,
     left: Expression,

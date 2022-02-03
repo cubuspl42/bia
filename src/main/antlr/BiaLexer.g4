@@ -24,6 +24,10 @@ IntLiteral              : '0'|[1-9][0-9]* ;
 TrueLiteral            : 'true' ;
 FalseLiteral            : 'false' ;
 
+// Arrows
+ThinArrow               : '->' ;
+FatArrow                : '=>' ;
+
 // Operators
 Plus                    : '+' ;
 Minus                   : '-' ;

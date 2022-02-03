@@ -41,17 +41,16 @@ object NullValue : Value {
 }
 
 class DefinedFunctionValue(
-    private val name: String,
     private val closure: DynamicScope,
-    private val declaration: FunctionDeclaration,
+    private val argumentDeclarations: List<ArgumentDeclaration>,
     private val body: FunctionBody,
 ) : FunctionValue() {
     override fun call(arguments: List<Value>): Value {
-        if (arguments.size != declaration.argumentDeclarations.size) {
+        if (arguments.size != argumentDeclarations.size) {
             throw UnsupportedOperationException("Function has to be called with as many arguments as it was defined with")
         }
 
-        val namedArguments = declaration.argumentDeclarations.zip(arguments) { declaration, value ->
+        val namedArguments = argumentDeclarations.zip(arguments) { declaration, value ->
             declaration.givenName to value
         }
 

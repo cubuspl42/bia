@@ -71,9 +71,8 @@ private fun executeFunctionDeclaration(
             scope.extend(
                 name = declaration.givenName,
                 value = DefinedFunctionValue(
-                    name = declaration.givenName,
                     closure = DynamicScope.delegated { resultScope },
-                    declaration = declaration,
+                    argumentDeclarations = declaration.argumentDeclarations,
                     body = body,
                 )
             )
