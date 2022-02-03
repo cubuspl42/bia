@@ -11,7 +11,6 @@ import bia.model.CallExpression
 import bia.model.DivisionExpression
 import bia.model.EqualsExpression
 import bia.model.Expression
-import bia.model.ExternalFunctionDeclaration
 import bia.model.FunctionBody
 import bia.model.FunctionDeclaration
 import bia.model.FunctionDefinition
@@ -37,6 +36,7 @@ import bia.model.ValueDeclaration
 import bia.parser.antlr.BiaLexer
 import bia.parser.antlr.BiaParser
 import bia.parser.antlr.BiaParserBaseVisitor
+import bia.type_checker.TypeCheckError
 
 fun transformProgram(
     outerScope: StaticScope,
@@ -111,8 +111,10 @@ fun transformBodyDeclaration(
 
     override fun visitFunctionDeclaration(
         ctx: BiaParser.FunctionDeclarationContext,
-    ): FunctionDeclaration {
+    ): BodyDeclaration {
         val functionGivenName = ctx.name.text
+
+        val isExternal = ctx.External() != null
 
         val (typeVariables, scopeWithTypeVariables) = transformTypeVariableDeclarations(
             scope = scope,
@@ -132,50 +134,59 @@ fun transformBodyDeclaration(
             )
         }
 
-        return object {
-            val functionDeclaration: FunctionDeclaration by lazy {
-                FunctionDeclaration(
-                    givenName = functionGivenName,
-                    buildDefinition = {
-                        FunctionDefinition(
-                            typeVariables = typeVariables,
-                            argumentDeclarations = argumentDeclarations,
-                            explicitReturnType = explicitReturnType,
-                            body = transformBody(
-                                outerScope = scopeWithTypeVariables
-                                    .extendOpen(
-                                        name = functionGivenName,
-                                        declaration = functionDeclaration,
-                                    )
-                                    .extendClosed(
-                                        namedDeclarations = argumentDeclarations.map { it.givenName to it },
-                                    ),
-                                body = ctx.body(),
-                            ),
-                        )
-                    }
-                )
-            }
+        val bodyOrNull: BiaParser.BodyContext? = ctx.body()
 
-            init {
-                functionDeclaration.definition
-            }
-        }.functionDeclaration
+        fun transformDefinedFunction(): FunctionDeclaration {
+            val body = bodyOrNull ?: throw TypeCheckError("Non-external function needs to have a body")
+
+            return object {
+                val functionDeclaration: FunctionDeclaration by lazy {
+                    FunctionDeclaration(
+                        givenName = functionGivenName,
+                        typeVariables = typeVariables,
+                        argumentDeclarations = argumentDeclarations,
+                        explicitReturnType = explicitReturnType,
+                        buildDefinition = {
+                            FunctionDefinition(
+                                body = transformBody(
+                                    outerScope = scopeWithTypeVariables
+                                        .extendOpen(
+                                            name = functionGivenName,
+                                            declaration = functionDeclaration,
+                                        )
+                                        .extendClosed(
+                                            namedDeclarations = argumentDeclarations.map { it.givenName to it },
+                                        ),
+                                    body = body,
+                                ),
+                            )
+                        }
+                    )
+                }
+
+                init {
+                    functionDeclaration.definition
+                }
+            }.functionDeclaration
+        }
+
+        fun transformExternalFunction(): FunctionDeclaration {
+            if (bodyOrNull != null) throw TypeCheckError("External functions cannot have a body")
+
+            if (explicitReturnType == null) throw TypeCheckError("External functions needs an explicit return type")
+
+            return FunctionDeclaration(
+                givenName = ctx.name.text,
+                typeVariables = typeVariables,
+                argumentDeclarations = argumentDeclarations,
+                explicitReturnType = explicitReturnType,
+                buildDefinition = { null },
+            )
+        }
+
+        return if (isExternal) transformExternalFunction()
+        else transformDefinedFunction()
     }
-
-    override fun visitExternalFunctionDeclaration(
-        ctx: BiaParser.ExternalFunctionDeclarationContext,
-    ) = ExternalFunctionDeclaration(
-        givenName = ctx.name.text,
-        argumentDeclarations = transformArgumentDeclarations(
-            scope = scope,
-            argumentListDeclaration = ctx.argumentListDeclaration(),
-        ),
-        returnType = transformType(
-            scope = scope,
-            type = ctx.returnType,
-        ),
-    )
 }.visit(declaration)
 
 data class TransformTypeVariableDeclarationsResult(
@@ -235,18 +246,15 @@ fun transformExpression(
     scope: StaticScope,
     expression: BiaParser.ExpressionContext,
 ): Expression = object : BiaParserBaseVisitor<Expression>() {
-    override fun visitReference(ctx: BiaParser.ReferenceContext): Expression {
-        val referredName: String = ctx.text
-
-        return ReferenceExpression(
-            referredName = referredName,
-            referredDeclaration = scope.getScopedDeclaration(name = referredName)
+    override fun visitReference(ctx: BiaParser.ReferenceContext): Expression =
+        transformReferenceExpression(
+            scope = scope,
+            expression = ctx.referenceExpression(),
         )
-    }
 
     override fun visitCallExpression(ctx: BiaParser.CallExpressionContext): Expression =
         CallExpression(
-            callee = transformExpression(
+            callee = transformReferenceExpression(
                 scope = scope,
                 expression = ctx.callee,
             ),
@@ -355,6 +363,18 @@ fun transformExpression(
             ),
         )
 }.visit(expression)
+
+fun transformReferenceExpression(
+    scope: StaticScope,
+    expression: BiaParser.ReferenceExpressionContext,
+): ReferenceExpression {
+    val referredName: String = expression.referredName.text
+
+    return ReferenceExpression(
+        referredName = referredName,
+        referredDeclaration = scope.getScopedDeclaration(name = referredName)
+    )
+}
 
 fun transformType(
     scope: StaticScope,

@@ -40,14 +40,18 @@ external def concat:L(a : List<Number>, b : List<Number>): List<Number>
 
 external def listOf(e1 : Number): List<Number>
 
-external def drop:L(l : List<Number>, n : Number): List<Number>
+external def <A> emptyList(): List<A>
+
+external def <A> drop:L(l : List<A>, n : Number): List<A>
 
 external def dropLast:L(l : List<Number>, n : Number): List<Number>
 
 external def size:L(l : List<Number>): Number
 
-external def first:L(l : List<Number>): Number
+external def <A> first:L(l : List<A>): A
 
 external def last:L(l : List<Number>): Number
 
 external def max:L(l : List<Number>): Number
+
+external def <A> cons:L(head : A, tail : List<A>): List<A>

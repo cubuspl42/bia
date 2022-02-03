@@ -4,14 +4,6 @@ import bia.parser.parseProgram
 
 const val sourceName = "test.bia"
 
-private fun <A> foo() {
-    data class Foo(
-        val a: A,
-    )
-
-
-}
-
 fun main() {
     val preludeSource = getResourceAsText("prelude.bia") ?: throw RuntimeException("Couldn't load the prelude")
 

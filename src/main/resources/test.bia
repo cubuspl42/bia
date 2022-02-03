@@ -2,17 +2,17 @@ def <A> listId(l : List<A>) {
     return l
 }
 
-def <A, B> map(l : List<A>, f : (e : A) : B) {
-    def recurse() {
-        val fst = first:L(l)
-        val tail = drop:L(l, 1)
+def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
+    def recurse(): List<B> {
+        val fst = first:L<A>(l)
+        val tail = drop:L<A>(l, 1)
         val headOut = f(fst)
-        val tailOut = map(tail, f)
+        val tailOut = map<A, B>(tail, f)
 
-        return cons:L(headOut, tailOut)
+        return cons:L<B>(headOut, tailOut)
     }
 
-    return if size:L(l) == 0 then listOf() else recurse()
+    return if size:L(l) == 0 then emptyList<B>() else recurse()
 }
 
 def mul2(e : Number) {

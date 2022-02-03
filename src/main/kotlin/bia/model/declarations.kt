@@ -24,38 +24,56 @@ data class ValueDeclaration(
     }
 }
 
-class FunctionDeclaration(
+data class FunctionDeclaration(
     override val givenName: String,
-    val buildDefinition: () -> FunctionDefinition,
+    val typeVariables: List<TypeVariable>,
+    val argumentDeclarations: List<ArgumentDeclaration>,
+    val explicitReturnType: Type?,
+    val buildDefinition: () -> FunctionDefinition?,
 ) : BodyDeclaration {
     val definition by lazy { buildDefinition() }
 
-    val explicitType: FunctionType?
-        get() = definition.explicitType
+    val body: FunctionBody? by lazy { definition?.body }
 
-    override val type: FunctionType by lazy {
-        definition.type
-    }
-
-    override fun validate() {
-        definition.validate()
-    }
-}
-
-data class ExternalFunctionDeclaration(
-    override val givenName: String,
-    val argumentDeclarations: List<ArgumentDeclaration>,
-    val returnType: Type,
-) : BodyDeclaration {
-    override val type: FunctionType by lazy {
+    val explicitType: FunctionType? = explicitReturnType?.let {
         FunctionType(
-            typeVariables = emptyList(),
+            typeVariables = typeVariables,
+            argumentDeclarations = argumentDeclarations,
+            returnType = it,
+        )
+    }
+
+    override val type: FunctionType by lazy {
+        val returnType = explicitReturnType ?: body?.returned?.type
+        ?: throw RuntimeException("Could not determine function return type")
+
+        explicitType ?: FunctionType(
+            typeVariables = typeVariables,
             argumentDeclarations = argumentDeclarations,
             returnType = returnType,
         )
     }
 
     override fun validate() {
+        val givenNameEachCount = argumentDeclarations.groupingBy { it.givenName }.eachCount()
+
+        givenNameEachCount.forEach { (givenName, count) ->
+            if (count > 1) {
+                throw TypeCheckError("Duplicate argument name: $givenName")
+            }
+        }
+
+        body?.validate()
+
+        val explicitReturnType = this.explicitReturnType
+        val inferredReturnType = body?.returned?.type
+
+        if (explicitReturnType != null && inferredReturnType != null) {
+            if (!inferredReturnType.isAssignableTo(explicitReturnType)) {
+                throw TypeCheckError("Inferred return type ${inferredReturnType.toPrettyString()} " +
+                        "is not compatible with the explicitly declared return type: ${explicitReturnType.toPrettyString()}")
+            }
+        }
     }
 }
 
@@ -68,50 +86,8 @@ data class ArgumentDeclaration(
 }
 
 data class FunctionDefinition(
-    val typeVariables: List<TypeVariable>,
-    val argumentDeclarations: List<ArgumentDeclaration>,
-    val explicitReturnType: Type?,
     val body: FunctionBody,
-) {
-    val explicitType: FunctionType? = explicitReturnType?.let {
-        FunctionType(
-            typeVariables = typeVariables,
-            argumentDeclarations = argumentDeclarations,
-            returnType = it,
-        )
-    }
-
-    val type: FunctionType by lazy {
-        explicitType ?: FunctionType(
-            typeVariables = typeVariables,
-            argumentDeclarations = argumentDeclarations,
-            returnType = body.returned.type,
-        )
-    }
-
-    fun validate() {
-        val givenNameEachCount = argumentDeclarations.groupingBy { it.givenName }.eachCount()
-
-        givenNameEachCount.forEach { (givenName, count) ->
-            if (count > 1) {
-                throw TypeCheckError("Duplicate argument name: $givenName")
-            }
-        }
-
-        body.validate()
-
-        val explicitReturnType = this.explicitReturnType
-
-        if (explicitReturnType != null) {
-            val inferredReturnType = body.returned.type
-
-            if (!inferredReturnType.isAssignableTo(explicitReturnType)) {
-                throw TypeCheckError("Inferred return type ${inferredReturnType.toPrettyString()} " +
-                        "is not compatible with the explicitly declared return type: ${explicitReturnType.toPrettyString()}")
-            }
-        }
-    }
-}
+)
 
 data class FunctionBody(
     val declarations: List<BodyDeclaration>,

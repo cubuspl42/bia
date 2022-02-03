@@ -1,12 +1,10 @@
 package bia.interpreter
 
 import bia.model.BodyDeclaration
-import bia.model.Declaration
 import bia.model.Expression
 import bia.model.FunctionBody
 import bia.model.FunctionDeclaration
 import bia.model.DefinedFunctionValue
-import bia.model.ExternalFunctionDeclaration
 import bia.model.Value
 import bia.model.ValueDeclaration
 
@@ -49,7 +47,6 @@ private fun executeDeclaration(
         scope = scope,
         declaration = declaration,
     )
-    is ExternalFunctionDeclaration -> scope
 }
 
 private fun executeValueDeclaration(
@@ -66,18 +63,23 @@ private fun executeValueDeclaration(
 private fun executeFunctionDeclaration(
     scope: DynamicScope,
     declaration: FunctionDeclaration,
-): DynamicScope = object {
-    val resultScope: DynamicScope by lazy {
-        scope.extend(
-            name = declaration.givenName,
-            value = DefinedFunctionValue(
+): DynamicScope {
+    val body = declaration.body
+
+    return if (body != null) object {
+        val resultScope: DynamicScope by lazy {
+            scope.extend(
                 name = declaration.givenName,
-                closure = DynamicScope.delegated { resultScope },
-                definition = declaration.definition,
-            ),
-        )
-    }
-}.resultScope
+                value = DefinedFunctionValue(
+                    name = declaration.givenName,
+                    closure = DynamicScope.delegated { resultScope },
+                    declaration = declaration,
+                    body = body,
+                )
+            )
+        }
+    }.resultScope else scope
+}
 
 private fun evaluateExpression(
     scope: DynamicScope,

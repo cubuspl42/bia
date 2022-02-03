@@ -278,7 +278,7 @@ data class CallExpression(
     }
 
     override val type: Type by lazy {
-        calleeType.returnType
+        resolvedCalleeType.returnType
     }
 
     override fun validate() {
@@ -367,7 +367,8 @@ data class IfExpression(
         if (trueBranchType == falseBranchType) {
             trueBranchType
         } else {
-            throw TypeCheckError("If expression has incompatible true- and false-branch types: $trueBranchType, $falseBranchType")
+            throw TypeCheckError("If expression has incompatible true- and false-branch types: " +
+                    "${trueBranchType.toPrettyString()}, ${falseBranchType.toPrettyString()}")
         }
     }
 

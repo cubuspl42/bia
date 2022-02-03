@@ -1,5 +1,7 @@
 package bia.model
 
+import bia.type_checker.TypeCheckError
+
 sealed interface Type {
     fun toPrettyString(): String
 
@@ -11,7 +13,8 @@ sealed interface Type {
 data class TypeVariableMapping(
     private val mapping: Map<TypeVariable, Type>,
 ) {
-    fun getVariable(variable: TypeVariable): Type = mapping[variable]!!
+    fun getMappedType(variable: TypeVariable): Type? =
+        mapping[variable]
 }
 
 sealed interface SpecificType : Type
@@ -23,7 +26,7 @@ data class TypeVariable(
     override fun toPrettyString(): String = "$givenName#$id"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
-        mapping.getVariable(this)
+        mapping.getMappedType(this) ?: this
 }
 
 @Suppress("IntroduceWhenSubject")

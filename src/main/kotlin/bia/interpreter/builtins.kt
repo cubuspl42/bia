@@ -94,7 +94,7 @@ private val consL = object : FunctionValue() {
         val tail = getArgument(arguments, 1) { asListValue() }
 
         return ListValue(
-            value = listOf(head) + tail,
+            value = listOf(head) + tail.value,
         )
     }
 }
@@ -170,6 +170,13 @@ private val listOf = object : FunctionValue() {
     override fun call(arguments: List<Value>): Value =
         ListValue(
             value = arguments,
+        )
+}
+
+private val emptyList = object : FunctionValue() {
+    override fun call(arguments: List<Value>): Value =
+        ListValue(
+            value = emptyList(),
         )
 }
 
@@ -353,6 +360,7 @@ val builtinScope = DynamicScope.of(
         "maxBy:L" to maxByL,
         "max:L" to maxL,
         "listOf" to listOf,
+        "emptyList" to emptyList,
         "concat:L" to concatL,
         "filter:Sq" to filterSq,
         "seqOf" to seqOf,
