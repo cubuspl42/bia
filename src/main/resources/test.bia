@@ -1,19 +1,28 @@
-val a = 10
-val b = a + 20
-val c = 15 * 2
-val d = b == c
-
-def f(x : Number) {
-    val a = x * 2
-    val b = a + 3
-
-    def g(y : Number) {
-        return a + b + y
-    }
-
-    return g
+def <A> listId(l : List<A>) {
+    return l
 }
 
-val h = f(1)
+def <A, B> map(l : List<A>, f : (e : A) : B) {
+    def recurse() {
+        val fst = first:L(l)
+        val tail = drop:L(l, 1)
+        val headOut = f(fst)
+        val tailOut = map(tail, f)
 
-return h(4)
+        return cons:L(headOut, tailOut)
+    }
+
+    return if size:L(l) == 0 then listOf() else recurse()
+}
+
+def mul2(e : Number) {
+    return e % 2 == 0
+}
+
+val l1 = listOf(1)
+
+val l2 = listId<Number>(l1)
+
+val l3 = map<Number, Boolean>(l1, mul2)
+
+return l3

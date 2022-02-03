@@ -259,6 +259,7 @@ data class ReferenceExpression(
 
 data class CallExpression(
     val callee: Expression,
+    val typeArguments: List<Type>,
     val arguments: List<Expression>,
 ) : Expression {
     private val calleeType: FunctionType by lazy {
@@ -266,34 +267,53 @@ data class CallExpression(
         calleeType as? FunctionType ?: throw TypeCheckError("Tried to call a non-function: $calleeType")
     }
 
+    private val resolvedCalleeType: FunctionType by lazy {
+        val typeVariableMapping = TypeVariableMapping(
+            mapping = typeArguments.zip(calleeType.typeVariables) { typeArgument, typeVariable ->
+                typeVariable to typeArgument
+            }.toMap(),
+        )
+
+        calleeType.resolveTypeVariables(mapping = typeVariableMapping)
+    }
+
     override val type: Type by lazy {
         calleeType.returnType
     }
 
     override fun validate() {
+        val typeVariables = calleeType.typeVariables
         val argumentDeclarations = calleeType.argumentDeclarations
+
+        val definedTypeVariableCount = typeVariables.size
+        val passedTypeArgumentCount = typeArguments.size
+
+        val functionName = if (callee is ReferenceExpression) callee.referredName else "(unnamed)"
+
+        if (passedTypeArgumentCount != definedTypeVariableCount) {
+            throw TypeCheckError(
+                "Function $functionName was defined with $definedTypeVariableCount type variables, $passedTypeArgumentCount passed",
+            )
+        }
 
         val definedArgumentCount = argumentDeclarations.size
         val passedArgumentCount = arguments.size
 
         if (passedArgumentCount != definedArgumentCount) {
             throw TypeCheckError(
-                listOf(
-                    "Function",
-                    if (callee is ReferenceExpression) callee.referredName else "",
-                    "was defined with $definedArgumentCount arguments, $passedArgumentCount passed"
-                ).joinToString(separator = " ")
+                "Function $functionName was defined with $definedArgumentCount arguments, $passedArgumentCount passed",
             )
         }
 
-        arguments.zip(argumentDeclarations).forEachIndexed { index, (argument, argumentDeclaration) ->
-            if (!argument.type.isAssignableTo(argumentDeclaration.type)) {
-                throw TypeCheckError(
-                    "Argument #${index + 1} has type ${argument.type.toPrettyString()} " +
-                            "which can't be assigned to ${argumentDeclaration.type.toPrettyString()}",
-                )
+        arguments.zip(resolvedCalleeType.argumentDeclarations)
+            .forEachIndexed { index, (argument, argumentDeclaration) ->
+                if (!argument.type.isAssignableTo(argumentDeclaration.type)) {
+                    throw TypeCheckError(
+                        "Function $functionName argument #${index + 1} has type ${argument.type.toPrettyString()} " +
+                                "which can't be assigned to ${argumentDeclaration.type.toPrettyString()}",
+                    )
+                }
             }
-        }
 
         super.validate()
     }

@@ -15,7 +15,10 @@ data class Prelude(
             )
 
             val result = transformDeclarations(
-                scope = StaticScope.of(declarations = emptyMap()),
+                scope = StaticScope.of(
+                    declarations = emptyMap(),
+                    typeVariables = emptyMap(),
+                ),
                 inputDeclarations = parser.declarationList().declaration(),
                 outputDeclarations = emptyList(),
             )

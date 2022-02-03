@@ -17,34 +17,42 @@ expression : left=expression operator=Multiplication right=expression # binaryOp
            | operator=Not expression # unaryOperation
            | left=expression operator=Equals right=expression # equalsOperation
            | LeftParen expression RightParen # parenExpression
-           | callee=expression LeftParen callArgumentList RightParen # callExpression
+           | callee=expression callTypeVariableList? LeftParen callArgumentList RightParen # callExpression
            | IntLiteral # intLiteral
            | TrueLiteral # trueLiteral
            | FalseLiteral # falseLiteral
            | Identifier # reference
            | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression ;
 
-type : NumberType # numberType
-     | BooleanType # booleanType
-     | BigIntegerType # bigIntegerType
-     | LeftParen argumentListDeclaration RightParen Colon returnType=type # functionType
-     | typeConstructor Lt type Gt # constructedType
-     | type QuestionMark  # nullableType ;
+typeExpression
+    : NumberType # numberType
+    | BooleanType # booleanType
+    | BigIntegerType # bigIntegerType
+    | LeftParen argumentListDeclaration RightParen Colon returnType=typeExpression # functionType
+    | typeConstructor Lt typeExpression Gt # constructedType
+    | typeExpression QuestionMark  # nullableType
+    | name=Identifier # genericArgumentReference ;
 
 typeConstructor : ListTypeConstructor # listConstructor
                 | SequenceTypeConstructor # sequenceConstructor ;
+
+callTypeVariableList: Lt typeExpression (Comma typeExpression)* Gt ;
 
 callArgumentList: (expression (Comma expression)*)? ;
 
 valueDeclaration : Val name=Identifier Assign initializer=expression ;
 
-functionDeclaration : Def name=Identifier LeftParen argumentListDeclaration RightParen (Colon explicitReturnType=type)? LeftBrace body RightBrace ;
+functionDeclaration : Def genericArgumentListDeclaration? name=Identifier LeftParen argumentListDeclaration RightParen (Colon explicitReturnType=typeExpression)? LeftBrace body RightBrace ;
 
-externalFunctionDeclaration : External Def name=Identifier LeftParen argumentListDeclaration RightParen Colon returnType=type;
+externalFunctionDeclaration : External Def genericArgumentListDeclaration? name=Identifier LeftParen argumentListDeclaration RightParen Colon returnType=typeExpression;
+
+genericArgumentListDeclaration : Lt (generitArgumentDeclaration (Comma generitArgumentDeclaration)*)? Gt ;
+
+generitArgumentDeclaration : name=Identifier ;
 
 argumentListDeclaration : (argumentDeclaration (Comma argumentDeclaration)*)? ;
 
-argumentDeclaration: name=Identifier Colon type;
+argumentDeclaration: name=Identifier Colon typeExpression;
 
 declaration : valueDeclaration | functionDeclaration | externalFunctionDeclaration ;
 

@@ -32,6 +32,7 @@ import bia.model.ReminderExpression
 import bia.model.SequenceType
 import bia.model.SubtractionExpression
 import bia.model.Type
+import bia.model.TypeVariable
 import bia.model.ValueDeclaration
 import bia.parser.antlr.BiaLexer
 import bia.parser.antlr.BiaParser
@@ -113,12 +114,22 @@ fun transformBodyDeclaration(
     ): FunctionDeclaration {
         val functionGivenName = ctx.name.text
 
+        val (typeVariables, scopeWithTypeVariables) = transformTypeVariableDeclarations(
+            scope = scope,
+            genericArgumentDeclarations = ctx.genericArgumentListDeclaration()?.generitArgumentDeclaration()
+                ?: emptyList(),
+        )
+
         val argumentDeclarations = transformArgumentDeclarations(
+            scope = scopeWithTypeVariables,
             argumentListDeclaration = ctx.argumentListDeclaration(),
         )
 
         val explicitReturnType = ctx.explicitReturnType?.let {
-            transformType(type = it)
+            transformType(
+                scope = scopeWithTypeVariables,
+                type = it,
+            )
         }
 
         return object {
@@ -127,10 +138,11 @@ fun transformBodyDeclaration(
                     givenName = functionGivenName,
                     buildDefinition = {
                         FunctionDefinition(
+                            typeVariables = typeVariables,
                             argumentDeclarations = argumentDeclarations,
                             explicitReturnType = explicitReturnType,
                             body = transformBody(
-                                outerScope = scope
+                                outerScope = scopeWithTypeVariables
                                     .extendOpen(
                                         name = functionGivenName,
                                         declaration = functionDeclaration,
@@ -156,18 +168,66 @@ fun transformBodyDeclaration(
     ) = ExternalFunctionDeclaration(
         givenName = ctx.name.text,
         argumentDeclarations = transformArgumentDeclarations(
+            scope = scope,
             argumentListDeclaration = ctx.argumentListDeclaration(),
         ),
-        returnType = transformType(ctx.returnType),
+        returnType = transformType(
+            scope = scope,
+            type = ctx.returnType,
+        ),
     )
 }.visit(declaration)
 
+data class TransformTypeVariableDeclarationsResult(
+    val typeVariables: List<TypeVariable>,
+    val newScope: StaticScope,
+)
+
+fun transformTypeVariableDeclarations(
+    scope: StaticScope,
+    genericArgumentDeclarations: List<BiaParser.GeneritArgumentDeclarationContext>,
+): TransformTypeVariableDeclarationsResult {
+    fun transformRecursively(
+        baseResult: TransformTypeVariableDeclarationsResult,
+        genericArgumentDeclarations: List<BiaParser.GeneritArgumentDeclarationContext>,
+    ): TransformTypeVariableDeclarationsResult {
+        if (genericArgumentDeclarations.isEmpty()) return baseResult
+
+        val head = genericArgumentDeclarations.first()
+        val tail = genericArgumentDeclarations.drop(1)
+
+        val givenName = head.name.text
+
+        val allocationResult = baseResult.newScope.allocateTypeVariable(givenName = givenName)
+
+        return transformRecursively(
+            baseResult = TransformTypeVariableDeclarationsResult(
+                typeVariables = baseResult.typeVariables + allocationResult.allocatedVariable,
+                newScope = allocationResult.newScope,
+            ),
+            genericArgumentDeclarations = tail,
+        )
+    }
+
+    return transformRecursively(
+        baseResult = TransformTypeVariableDeclarationsResult(
+            typeVariables = emptyList(),
+            newScope = scope,
+        ),
+        genericArgumentDeclarations = genericArgumentDeclarations,
+    )
+}
+
 fun transformArgumentDeclarations(
+    scope: StaticScope,
     argumentListDeclaration: BiaParser.ArgumentListDeclarationContext,
 ): List<ArgumentDeclaration> = argumentListDeclaration.argumentDeclaration().map {
     ArgumentDeclaration(
         givenName = it.name.text,
-        type = transformType(type = it.type()),
+        type = transformType(
+            scope = scope,
+            type = it.typeExpression(),
+        ),
     )
 }
 
@@ -190,6 +250,12 @@ fun transformExpression(
                 scope = scope,
                 expression = ctx.callee,
             ),
+            typeArguments = ctx.callTypeVariableList()?.typeExpression()?.map {
+                transformType(
+                    scope = scope,
+                    type = it,
+                )
+            } ?: emptyList(),
             arguments = ctx.callArgumentList().expression().map {
                 transformExpression(
                     scope = scope,
@@ -291,7 +357,8 @@ fun transformExpression(
 }.visit(expression)
 
 fun transformType(
-    type: BiaParser.TypeContext,
+    scope: StaticScope,
+    type: BiaParser.TypeExpressionContext,
 ): Type = object : BiaParserBaseVisitor<Type>() {
     override fun visitNumberType(ctx: BiaParser.NumberTypeContext) = NumberType
 
@@ -300,15 +367,23 @@ fun transformType(
     override fun visitBigIntegerType(ctx: BiaParser.BigIntegerTypeContext) = BigIntegerType
 
     override fun visitFunctionType(ctx: BiaParser.FunctionTypeContext) = FunctionType(
+        typeVariables = emptyList(),
         argumentDeclarations = transformArgumentDeclarations(
+            scope = scope,
             argumentListDeclaration = ctx.argumentListDeclaration(),
         ),
-        returnType = transformType(type = ctx.returnType),
+        returnType = transformType(
+            scope = scope,
+            type = ctx.returnType,
+        ),
     )
 
     override fun visitConstructedType(ctx: BiaParser.ConstructedTypeContext): Type {
         val typeConstructor: BiaParser.TypeConstructorContext = ctx.typeConstructor()
-        val argumentType = transformType(type = ctx.type())
+        val argumentType = transformType(
+            scope = scope,
+            type = ctx.typeExpression(),
+        )
 
         return transformTypeConstructor(
             typeConstructor = typeConstructor,
@@ -317,8 +392,14 @@ fun transformType(
     }
 
     override fun visitNullableType(ctx: BiaParser.NullableTypeContext) = NullableType(
-        baseType = transformType(type = ctx.type()),
+        baseType = transformType(
+            scope = scope,
+            type = ctx.typeExpression(),
+        ),
     )
+
+    override fun visitGenericArgumentReference(ctx: BiaParser.GenericArgumentReferenceContext): Type =
+        scope.getClosestTypeVariable(givenName = ctx.name.text)
 }.visit(type)
 
 fun transformTypeConstructor(

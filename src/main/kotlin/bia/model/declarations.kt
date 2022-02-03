@@ -49,6 +49,7 @@ data class ExternalFunctionDeclaration(
 ) : BodyDeclaration {
     override val type: FunctionType by lazy {
         FunctionType(
+            typeVariables = emptyList(),
             argumentDeclarations = argumentDeclarations,
             returnType = returnType,
         )
@@ -67,12 +68,14 @@ data class ArgumentDeclaration(
 }
 
 data class FunctionDefinition(
+    val typeVariables: List<TypeVariable>,
     val argumentDeclarations: List<ArgumentDeclaration>,
     val explicitReturnType: Type?,
     val body: FunctionBody,
 ) {
     val explicitType: FunctionType? = explicitReturnType?.let {
         FunctionType(
+            typeVariables = typeVariables,
             argumentDeclarations = argumentDeclarations,
             returnType = it,
         )
@@ -80,6 +83,7 @@ data class FunctionDefinition(
 
     val type: FunctionType by lazy {
         explicitType ?: FunctionType(
+            typeVariables = typeVariables,
             argumentDeclarations = argumentDeclarations,
             returnType = body.returned.type,
         )
