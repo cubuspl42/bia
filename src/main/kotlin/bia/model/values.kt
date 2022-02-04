@@ -65,6 +65,13 @@ class DefinedFunctionValue(
     }
 }
 
+data class ObjectValue(
+    val entries: Map<String, Value>,
+) : Value {
+    override val value: Any
+        get() = entries
+}
+
 fun Value.asNumberValue(message: String = "Expected a number, got"): NumberValue =
     this as? NumberValue ?: throw UnsupportedOperationException("$message: $this")
 

@@ -11,7 +11,12 @@ typeExpression
     | argumentListDeclaration Colon returnType=typeExpression # functionType
     | typeConstructor Lt typeExpression Gt # constructedType
     | typeExpression QuestionMark  # nullableType
-    | name=Identifier # genericArgumentReference ;
+    | name=Identifier # genericArgumentReference
+    | LeftBrace objectTypeEntryDeclaration (Comma objectTypeEntryDeclaration)* RightBrace # objectType
+    ;
+
+objectTypeEntryDeclaration
+    : fieldName=Identifier Colon fieldType=typeExpression ;
 
 callTypeVariableList: Lt typeExpression (Comma typeExpression)* Gt ;
 
@@ -32,6 +37,7 @@ expression
     | IntLiteral # intLiteral
     | TrueLiteral # trueLiteral
     | FalseLiteral # falseLiteral
+    | objectLiteral # objectLiteralAlt
     | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
     | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow LeftBrace body RightBrace # lambdaExpression ;
 
@@ -40,6 +46,12 @@ callableExpression
     | callee=callableExpression callTypeVariableList? LeftParen callArgumentList RightParen # callExpression
     | referredName=Identifier # referenceExpression
     ;
+
+objectLiteral
+    : LeftBrace objectLiteralEntry (Comma objectLiteralEntry)* RightBrace ;
+
+objectLiteralEntry
+    : assignedFieldName=Identifier Assign initializer=expression ;
 
 typeConstructor : ListTypeConstructor # listConstructor
                 | SequenceTypeConstructor # sequenceConstructor ;

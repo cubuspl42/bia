@@ -17,8 +17,11 @@ def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
     })()
 }
 
-def mul2(e : Number) {
-    return e % 2 == 0
+def bar(obj : {
+    a : Number,
+    b : Boolean
+}) {
+    return 42
 }
 
 val l1 = listOf(1, 2, 3, 4)
@@ -31,4 +34,7 @@ val l3 = map<Number, Boolean>(l1, (e : Number) => {
 
 val n = foo(1, true)
 
-return l3
+return bar({
+    a = 10,
+    b = false
+})

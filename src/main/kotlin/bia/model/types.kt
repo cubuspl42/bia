@@ -82,12 +82,6 @@ data class NullableType(val baseType: Type) : SpecificType {
         )
 }
 
-private fun typeConstructorToPrettyString(
-    typeConstructor: String,
-    argumentType: Type,
-): String =
-    "$typeConstructor<${argumentType.toPrettyString()}>"
-
 object BigIntegerType : SpecificType {
     override fun toPrettyString(): String = "BigInteger"
 
@@ -115,3 +109,23 @@ data class FunctionType(
         returnType = returnType.resolveTypeVariables(mapping = mapping),
     )
 }
+
+data class ObjectType(
+    val entries: Map<String, Type>,
+) : SpecificType {
+    override fun toPrettyString(): String =
+        "{ ${entries.entries.joinToString { "${it.key} : ${it.value}" }} }"
+
+    override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
+        copy(
+            entries = entries.mapValues { (_, type) ->
+                type.resolveTypeVariables(mapping = mapping)
+            },
+        )
+}
+
+private fun typeConstructorToPrettyString(
+    typeConstructor: String,
+    argumentType: Type,
+): String =
+    "$typeConstructor<${argumentType.toPrettyString()}>"

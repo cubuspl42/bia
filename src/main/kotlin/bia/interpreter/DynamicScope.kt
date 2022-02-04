@@ -11,6 +11,8 @@ abstract class DynamicScope {
         fun delegated(delegate: () -> DynamicScope): DynamicScope = object : DynamicScope() {
             override val values: Map<String, Value> by lazy { delegate().values }
         }
+
+        val empty: DynamicScope = of(values = emptyMap())
     }
 
     abstract val values: Map<String, Value>

@@ -28,6 +28,8 @@ import bia.model.MultiplicationExpression
 import bia.model.NotExpression
 import bia.model.NullableType
 import bia.model.NumberType
+import bia.model.ObjectLiteralExpression
+import bia.model.ObjectType
 import bia.model.OrExpression
 import bia.model.ReferenceExpression
 import bia.model.ReminderExpression
@@ -153,7 +155,7 @@ fun transformBodyDeclaration(
         )
 
         val explicitReturnType = ctx.explicitReturnType?.let {
-            transformType(
+            transformTypeExpression(
                 scope = scopeWithTypeVariables,
                 typeExpression = it,
             )
@@ -264,7 +266,7 @@ fun transformArgumentListDeclarations(
         argumentDeclarations = ctx.argumentDeclaration().map {
             ArgumentDeclaration(
                 givenName = it.name.text,
-                type = transformType(
+                type = transformTypeExpression(
                     scope = scope,
                     typeExpression = it.typeExpression(),
                 ),
@@ -276,7 +278,7 @@ fun transformArgumentListDeclarations(
         ctx: BiaParser.VarargArgumentListDeclarationContext,
     ): ArgumentListDeclaration = VarargArgumentListDeclaration(
         givenName = ctx.givenName.text,
-        type = transformType(
+        type = transformTypeExpression(
             scope = scope,
             typeExpression = ctx.typeExpression(),
         ),
@@ -300,7 +302,7 @@ fun transformExpression(
                 expression = ctx.callee,
             ),
             typeArguments = ctx.callTypeVariableList()?.typeExpression()?.map {
-                transformType(
+                transformTypeExpression(
                     scope = scope,
                     typeExpression = it,
                 )
@@ -338,6 +340,16 @@ fun transformExpression(
     override fun visitFalseLiteral(ctx: BiaParser.FalseLiteralContext?): Expression =
         BooleanLiteralExpression(
             value = false,
+        )
+
+    override fun visitObjectLiteral(ctx: BiaParser.ObjectLiteralContext) =
+        ObjectLiteralExpression(
+            entries = ctx.objectLiteralEntry().associate {
+                it.assignedFieldName.text to transformExpression(
+                    scope = scope,
+                    expression = it.initializer,
+                )
+            },
         )
 
     override fun visitParenExpression(ctx: BiaParser.ParenExpressionContext): Expression =
@@ -416,7 +428,7 @@ fun transformExpression(
         )
 
         val explicitReturnType = ctx.explicitReturnType?.let {
-            transformType(
+            transformTypeExpression(
                 scope = scopeWithTypeVariables,
                 typeExpression = it,
             )
@@ -448,7 +460,7 @@ fun transformReferenceExpression(
     )
 }
 
-fun transformType(
+fun transformTypeExpression(
     scope: StaticScope,
     typeExpression: BiaParser.TypeExpressionContext,
 ): Type = object : BiaParserBaseVisitor<Type>() {
@@ -464,7 +476,7 @@ fun transformType(
             scope = scope,
             argumentListDeclaration = ctx.argumentListDeclaration(),
         ),
-        returnType = transformType(
+        returnType = transformTypeExpression(
             scope = scope,
             typeExpression = ctx.returnType,
         ),
@@ -472,7 +484,7 @@ fun transformType(
 
     override fun visitConstructedType(ctx: BiaParser.ConstructedTypeContext): Type {
         val typeConstructor: BiaParser.TypeConstructorContext = ctx.typeConstructor()
-        val argumentType = transformType(
+        val argumentType = transformTypeExpression(
             scope = scope,
             typeExpression = ctx.typeExpression(),
         )
@@ -484,7 +496,7 @@ fun transformType(
     }
 
     override fun visitNullableType(ctx: BiaParser.NullableTypeContext) = NullableType(
-        baseType = transformType(
+        baseType = transformTypeExpression(
             scope = scope,
             typeExpression = ctx.typeExpression(),
         ),
@@ -492,6 +504,15 @@ fun transformType(
 
     override fun visitGenericArgumentReference(ctx: BiaParser.GenericArgumentReferenceContext): Type =
         scope.getClosestTypeVariable(givenName = ctx.name.text)
+
+    override fun visitObjectType(ctx: BiaParser.ObjectTypeContext) = ObjectType(
+        entries = ctx.objectTypeEntryDeclaration().associate {
+            it.fieldName.text to transformTypeExpression(
+                scope = scope,
+                typeExpression = it.typeExpression(),
+            )
+        }
+    )
 }.visit(typeExpression)
 
 fun transformTypeConstructor(

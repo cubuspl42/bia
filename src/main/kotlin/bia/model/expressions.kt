@@ -340,6 +340,25 @@ data class BooleanLiteralExpression(
         )
 }
 
+data class ObjectLiteralExpression(
+    val entries: Map<String, Expression>,
+) : Expression {
+    override val type: Type by lazy {
+        ObjectType(
+            entries = entries.mapValues { (_, expression) ->
+                expression.type
+            },
+        )
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
+        ObjectValue(
+            entries = entries.mapValues { (_, expression) ->
+                expression.evaluate(scope = scope)
+            },
+        )
+}
+
 data class IfExpression(
     val guard: Expression,
     val trueBranch: Expression,

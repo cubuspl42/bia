@@ -1,11 +1,10 @@
 package bia.parser
 
 import bia.model.CallExpression
-import bia.model.Declaration
-import bia.model.Expression
 import bia.model.LessThenExpression
 import bia.model.ReferenceExpression
 import bia.model.TypeVariable
+import bia.test_utils.parseExpression
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -88,22 +87,3 @@ internal class ParsingExpressionsTest {
     }
 }
 
-private fun parseExpression(
-    scopeDeclarations: List<Declaration> = emptyList(),
-    scopeTypeVariables: List<TypeVariable> = emptyList(),
-    source: String,
-): Expression {
-    val parser = buildAntlrParser(source = source, sourceName = "<expression>")
-
-    return transformExpression(
-        scope = StaticScope.of(
-            declarations = scopeDeclarations.associate {
-                it.givenName to ClosedDeclaration(declaration = it)
-            },
-            typeVariables = scopeTypeVariables.associate {
-                it.givenName to listOf(it)
-            },
-        ),
-        expression = parser.expression(),
-    )
-}
