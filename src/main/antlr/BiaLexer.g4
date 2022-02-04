@@ -52,3 +52,4 @@ Comma                   : ',' ;
 Colon                   : ':' ;
 QuestionMark            : '?' ;
 Ellipsis                : '...' ;
+Dot                     : '.' ;

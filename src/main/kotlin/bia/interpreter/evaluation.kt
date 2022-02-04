@@ -50,7 +50,7 @@ private fun executeDeclaration(
     )
 }
 
-private fun executeValueDeclaration(
+fun executeValueDeclaration(
     scope: DynamicScope,
     declaration: ValueDeclaration,
 ): DynamicScope = scope.extend(

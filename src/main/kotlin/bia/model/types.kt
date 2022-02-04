@@ -114,7 +114,7 @@ data class ObjectType(
     val entries: Map<String, Type>,
 ) : SpecificType {
     override fun toPrettyString(): String =
-        "{ ${entries.entries.joinToString { "${it.key} : ${it.value}" }} }"
+        "{ ${entries.entries.joinToString { "${it.key} : ${it.value.toPrettyString()}" }} }"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
         copy(

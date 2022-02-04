@@ -21,7 +21,7 @@ def bar(obj : {
     a : Number,
     b : Boolean
 }) {
-    return 42
+    return obj.a
 }
 
 val l1 = listOf(1, 2, 3, 4)

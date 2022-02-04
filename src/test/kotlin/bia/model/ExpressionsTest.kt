@@ -1,6 +1,7 @@
 package bia.model
 
 import bia.interpreter.DynamicScope
+import bia.interpreter.executeValueDeclaration
 import bia.parser.ClosedDeclaration
 import bia.test_utils.parseExpression
 import org.junit.jupiter.api.Test
@@ -68,6 +69,63 @@ class ExpressionsTest {
                     values = mapOf(
                         "x" to NumberValue(2.0),
                     ),
+                ),
+            ),
+        )
+    }
+
+    @Test
+    fun testObjectFieldRead() {
+        val objectDeclaration = ValueDeclaration(
+            givenName = "obj",
+            initializer = ObjectLiteralExpression(
+                entries = mapOf(
+                    "a" to IntLiteralExpression(
+                        value = 1L,
+                    ),
+                    "b" to IntLiteralExpression(
+                        value = 2L,
+                    ),
+                    "c" to IntLiteralExpression(
+                        value = 3L,
+                    ),
+                )
+            ),
+        )
+
+        val expression = parseExpression(
+            scopeDeclarations = listOf(
+                objectDeclaration,
+            ),
+            source = "obj.a",
+        )
+
+        assertIs<ObjectFieldReadExpression>(expression)
+
+        assertEquals(
+            expected = ObjectFieldReadExpression(
+                obj = ReferenceExpression(
+                    referredName = "obj",
+                    referredDeclaration = ClosedDeclaration(objectDeclaration),
+                ),
+                readFieldName = "a",
+            ),
+            actual = expression,
+        )
+
+        expression.validate()
+
+        assertEquals(
+            expected = NumberType,
+            actual = expression.type,
+        )
+
+        assertEquals(
+            expected = NumberValue(1.0),
+            actual = expression.evaluate(
+                scope = executeValueDeclaration(
+                    scope = DynamicScope.empty,
+                    declaration = objectDeclaration,
                 ),
             ),
         )

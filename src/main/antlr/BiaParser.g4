@@ -39,7 +39,9 @@ expression
     | FalseLiteral # falseLiteral
     | objectLiteral # objectLiteralAlt
     | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
-    | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow LeftBrace body RightBrace # lambdaExpression ;
+    | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow LeftBrace body RightBrace # lambdaExpression
+    | expression Dot readFieldName=Identifier # objectFieldRead
+    ;
 
 callableExpression
     : LeftParen expression RightParen # parenExpression

@@ -5,6 +5,7 @@ import bia.parser.ClosedDeclaration
 import bia.parser.OpenFunctionDeclaration
 import bia.parser.ScopedDeclaration
 import bia.type_checker.TypeCheckError
+import java.lang.IllegalArgumentException
 
 sealed interface Expression {
     val declaredType: Type?
@@ -411,6 +412,29 @@ data class LambdaExpression(
         argumentDeclarations = argumentDeclarations,
         body = body,
     )
+}
+
+data class ObjectFieldReadExpression(
+    val obj: Expression,
+    val readFieldName: String,
+) : Expression {
+    private val objectType by lazy {
+        obj.type as? ObjectType ?: throw TypeCheckError("Tried to read a field from a non-object")
+    }
+
+    override val type: Type by lazy {
+        objectType.entries[readFieldName]
+            ?: throw TypeCheckError("Object with type ${objectType.toPrettyString()} does not have a field named $readFieldName")
+    }
+
+    override fun evaluate(scope: DynamicScope): Value {
+        val objectValue = obj.evaluate(scope = scope).asObjectValue(
+            message = "Only objects can have fields read",
+        )
+
+        return objectValue.entries[readFieldName]
+            ?: throw IllegalArgumentException("Object doesn't have field $readFieldName at runtime")
+    }
 }
 
 private fun evaluateNumberBinaryExpression(

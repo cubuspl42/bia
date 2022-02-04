@@ -28,6 +28,7 @@ import bia.model.MultiplicationExpression
 import bia.model.NotExpression
 import bia.model.NullableType
 import bia.model.NumberType
+import bia.model.ObjectFieldReadExpression
 import bia.model.ObjectLiteralExpression
 import bia.model.ObjectType
 import bia.model.OrExpression
@@ -446,6 +447,15 @@ fun transformExpression(
             body = body,
         )
     }
+
+    override fun visitObjectFieldRead(ctx: BiaParser.ObjectFieldReadContext) =
+        ObjectFieldReadExpression(
+            obj = transformExpression(
+                scope = scope,
+                expression = ctx.expression(),
+            ),
+            readFieldName = ctx.readFieldName.text,
+        )
 }.visit(expression)
 
 fun transformReferenceExpression(

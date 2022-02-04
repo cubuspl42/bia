@@ -89,3 +89,6 @@ fun Value.asBigIntegerValue(message: String = "Expected a big integer, got"): Bi
 
 fun Value.asFunctionValue(message: String = "Expected a function, got"): FunctionValue =
     this as? FunctionValue ?: throw UnsupportedOperationException("$message: $this")
+
+fun Value.asObjectValue(message: String = "Expected an object, got"): ObjectValue =
+    this as? ObjectValue ?: throw UnsupportedOperationException("$message: $this")
