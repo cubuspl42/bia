@@ -7,28 +7,28 @@ val foo = (a : Number, b : Boolean) -> Number => {
 }
 
 def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
-    def recurse(): List<B> {
+    return if size:L(l) == 0 then emptyList<B>() else (() => {
         val fst = first:L<A>(l)
         val tail = drop:L<A>(l, 1)
         val headOut = f(fst)
         val tailOut = map<A, B>(tail, f)
 
         return cons:L<B>(headOut, tailOut)
-    }
-
-    return if size:L(l) == 0 then emptyList<B>() else recurse()
+    })()
 }
 
 def mul2(e : Number) {
     return e % 2 == 0
 }
 
-val l1 = listOf(1)
+val l1 = listOf(1, 2, 3, 4)
 
 val l2 = listId<Number>(l1)
 
-val l3 = map<Number, Boolean>(l1, mul2)
+val l3 = map<Number, Boolean>(l1, (e : Number) => {
+    return e % 2 == 0
+})
 
 val n = foo(1, true)
 
-return n
+return l3

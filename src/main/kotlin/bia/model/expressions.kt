@@ -283,7 +283,6 @@ data class CallExpression(
 
     override fun validate() {
         val typeVariables = calleeType.typeVariables
-        val argumentDeclarations = calleeType.argumentDeclarations
 
         val definedTypeVariableCount = typeVariables.size
         val passedTypeArgumentCount = typeArguments.size
@@ -296,24 +295,10 @@ data class CallExpression(
             )
         }
 
-        val definedArgumentCount = argumentDeclarations.size
-        val passedArgumentCount = arguments.size
-
-        if (passedArgumentCount != definedArgumentCount) {
-            throw TypeCheckError(
-                "Function $functionName was defined with $definedArgumentCount arguments, $passedArgumentCount passed",
-            )
-        }
-
-        arguments.zip(resolvedCalleeType.argumentDeclarations)
-            .forEachIndexed { index, (argument, argumentDeclaration) ->
-                if (!argument.type.isAssignableTo(argumentDeclaration.type)) {
-                    throw TypeCheckError(
-                        "Function $functionName argument #${index + 1} has type ${argument.type.toPrettyString()} " +
-                                "which can't be assigned to ${argumentDeclaration.type.toPrettyString()}",
-                    )
-                }
-            }
+        resolvedCalleeType.argumentListDeclaration.validateCall(
+            functionName = functionName,
+            arguments = arguments,
+        )
 
         super.validate()
     }
@@ -386,16 +371,20 @@ data class IfExpression(
 
 data class LambdaExpression(
     val typeVariables: List<TypeVariable>,
-    val argumentDeclarations: List<ArgumentDeclaration>,
+    val argumentListDeclaration: ArgumentListDeclaration,
     val explicitReturnType: Type?,
     val body: FunctionBody,
 ) : Expression {
     override val type: Type by lazy {
         FunctionType(
             typeVariables = typeVariables,
-            argumentDeclarations = argumentDeclarations,
+            argumentListDeclaration = argumentListDeclaration,
             returnType = explicitReturnType ?: body.returned.type,
         )
+    }
+
+    private val argumentDeclarations by lazy {
+        (argumentListDeclaration as BasicArgumentListDeclaration).argumentDeclarations
     }
 
     override fun evaluate(scope: DynamicScope): Value = DefinedFunctionValue(

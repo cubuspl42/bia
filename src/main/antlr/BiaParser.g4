@@ -54,7 +54,10 @@ genericArgumentListDeclaration : Lt (generitArgumentDeclaration (Comma generitAr
 
 generitArgumentDeclaration : name=Identifier ;
 
-argumentListDeclaration : LeftParen (argumentDeclaration (Comma argumentDeclaration)*)? RightParen ;
+argumentListDeclaration
+    : LeftParen (argumentDeclaration (Comma argumentDeclaration)*)? RightParen # basicArgumentListDeclaration
+    | LeftParen givenName=Identifier Colon typeExpression Ellipsis RightParen # varargArgumentListDeclaration
+    ;
 
 argumentDeclaration: name=Identifier Colon typeExpression;
 

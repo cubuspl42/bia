@@ -29,6 +29,11 @@ abstract class StaticScope {
             declarations = declarations,
             typeVariables = typeVariables,
         )
+
+        val empty = of(
+            declarations = emptyMap(),
+            typeVariables = emptyMap(),
+        )
     }
 
     abstract val declarations: Map<String, ScopedDeclaration>

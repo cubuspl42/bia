@@ -1,7 +1,5 @@
 package bia.model
 
-import bia.type_checker.TypeCheckError
-
 sealed interface Type {
     fun toPrettyString(): String
 
@@ -98,30 +96,22 @@ object BigIntegerType : SpecificType {
 
 data class FunctionType(
     val typeVariables: List<TypeVariable>,
-    val argumentDeclarations: List<ArgumentDeclaration>,
+    val argumentListDeclaration: ArgumentListDeclaration,
     val returnType: Type,
 ) : SpecificType {
     override fun isAssignableDirectlyTo(other: Type): Boolean = if (other is FunctionType) {
-        fun areArgumentsAssignable() = argumentDeclarations.zip(other.argumentDeclarations)
-            .all { (argumentDeclaration, otherArgumentDeclaration) ->
-                argumentDeclaration.type.isAssignableTo(otherArgumentDeclaration.type)
-            }
-
-        argumentDeclarations.size <= other.argumentDeclarations.size && areArgumentsAssignable()
+        argumentListDeclaration.isAssignableDirectlyTo(other.argumentListDeclaration) &&
+                returnType.isAssignableTo(other.returnType)
     } else false
 
     override fun toPrettyString(): String {
-        val argumentDeclarationsStr = argumentDeclarations.joinToString { it.toPrettyString() }
         val returnTypeStr = returnType.toPrettyString()
-
-        return "($argumentDeclarationsStr) : $returnTypeStr"
+        return "${argumentListDeclaration.toPrettyString()} : $returnTypeStr"
     }
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): FunctionType = FunctionType(
         typeVariables = emptyList(),
-        argumentDeclarations = argumentDeclarations.map {
-            it.copy(type = it.type.resolveTypeVariables(mapping = mapping))
-        },
+        argumentListDeclaration = argumentListDeclaration.resolveTypeVariables(mapping = mapping),
         returnType = returnType.resolveTypeVariables(mapping = mapping),
     )
 }

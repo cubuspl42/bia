@@ -9,7 +9,7 @@ import bia.model.TypeVariable
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
-internal class ParsingTest {
+internal class ParsingExpressionsTest {
     @Test
     fun parseLt() {
         assertEquals(

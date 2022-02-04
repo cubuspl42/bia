@@ -38,7 +38,7 @@ external def product:L2(
 
 external def concat:L(a : List<Number>, b : List<Number>): List<Number>
 
-external def listOf(e1 : Number): List<Number>
+external def listOf(elements : Number...): List<Number>
 
 external def <A> emptyList(): List<A>
 

@@ -51,3 +51,4 @@ RightBrace              : '}' ;
 Comma                   : ',' ;
 Colon                   : ':' ;
 QuestionMark            : '?' ;
+Ellipsis                : '...' ;

@@ -1,5 +1,6 @@
 package bia.interpreter
 
+import bia.model.BasicArgumentListDeclaration
 import bia.model.BodyDeclaration
 import bia.model.Expression
 import bia.model.FunctionBody
@@ -66,13 +67,16 @@ private fun executeFunctionDeclaration(
 ): DynamicScope {
     val body = declaration.body
 
+    val argumentDeclarations = (declaration.argumentListDeclaration as BasicArgumentListDeclaration)
+        .argumentDeclarations
+
     return if (body != null) object {
         val resultScope: DynamicScope by lazy {
             scope.extend(
                 name = declaration.givenName,
                 value = DefinedFunctionValue(
                     closure = DynamicScope.delegated { resultScope },
-                    argumentDeclarations = declaration.argumentDeclarations,
+                    argumentDeclarations = argumentDeclarations,
                     body = body,
                 )
             )
