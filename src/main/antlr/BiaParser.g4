@@ -16,7 +16,7 @@ typeExpression
 callTypeVariableList: Lt typeExpression (Comma typeExpression)* Gt ;
 
 expression
-    : callee=referenceExpression callTypeVariableList? LeftParen callArgumentList RightParen # callExpression
+    : callableExpression # callableExpressionAlt
     | left=expression operator=Multiplication right=expression # binaryOperation
     | left=expression operator=Division right=expression # binaryOperation
     | left=expression operator=IntegerDivision right=expression # binaryOperation
@@ -27,17 +27,19 @@ expression
     | left=expression operator=And right=expression # binaryOperation
     | left=expression operator=Lt right=expression # binaryOperation
     | left=expression operator=Gt right=expression # binaryOperation
-    | operator=Not expression # unaryOperation
     | left=expression operator=Equals right=expression # equalsOperation
-    | LeftParen expression RightParen # parenExpression
+    | operator=Not expression # unaryOperation
     | IntLiteral # intLiteral
     | TrueLiteral # trueLiteral
     | FalseLiteral # falseLiteral
-    | referenceExpression # reference
     | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
     | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow LeftBrace body RightBrace # lambdaExpression ;
 
-referenceExpression : referredName=Identifier ;
+callableExpression
+    : LeftParen expression RightParen # parenExpression
+    | callee=callableExpression callTypeVariableList? LeftParen callArgumentList RightParen # callExpression
+    | referredName=Identifier # referenceExpression
+    ;
 
 typeConstructor : ListTypeConstructor # listConstructor
                 | SequenceTypeConstructor # sequenceConstructor ;

@@ -38,6 +38,7 @@ import bia.parser.antlr.BiaLexer
 import bia.parser.antlr.BiaParser
 import bia.parser.antlr.BiaParserBaseVisitor
 import bia.type_checker.TypeCheckError
+import org.antlr.v4.runtime.ParserRuleContext
 
 fun transformProgram(
     outerScope: StaticScope,
@@ -267,17 +268,17 @@ fun transformArgumentDeclarations(
 
 fun transformExpression(
     scope: StaticScope,
-    expression: BiaParser.ExpressionContext,
+    expression: ParserRuleContext,
 ): Expression = object : BiaParserBaseVisitor<Expression>() {
-    override fun visitReference(ctx: BiaParser.ReferenceContext): Expression =
+    override fun visitReferenceExpression(ctx: BiaParser.ReferenceExpressionContext): Expression =
         transformReferenceExpression(
             scope = scope,
-            expression = ctx.referenceExpression(),
+            expression = ctx,
         )
 
     override fun visitCallExpression(ctx: BiaParser.CallExpressionContext): Expression =
         CallExpression(
-            callee = transformReferenceExpression(
+            callee = transformExpression(
                 scope = scope,
                 expression = ctx.callee,
             ),
