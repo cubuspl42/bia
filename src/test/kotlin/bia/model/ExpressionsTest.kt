@@ -104,7 +104,7 @@ class ExpressionsTest {
 
         assertEquals(
             expected = ObjectFieldReadExpression(
-                obj = ReferenceExpression(
+                objectExpression = ReferenceExpression(
                     referredName = "obj",
                     referredDeclaration = ClosedDeclaration(objectDeclaration),
                 ),
@@ -129,5 +129,51 @@ class ExpressionsTest {
                 ),
             ),
         )
+    }
+
+    @Test
+    fun testIs() {
+        val unionDeclaration = UnionDeclaration(
+            unionName = "Union1",
+            unionType = WideUnionType(
+                alternatives = setOf(
+                    UnionAlternative(
+                        tagName = "Tag1",
+                        type = NumberType,
+                    ),
+                    UnionAlternative(
+                        tagName = "Tag2",
+                        type = BooleanType,
+                    ),
+                ),
+            ),
+        )
+
+        val argumentDeclaration = ArgumentDeclaration(
+            givenName = "arg1",
+            valueType = unionDeclaration.unionType,
+        )
+
+        val expression = parseExpression(
+            scopeDeclarations = listOf(
+                argumentDeclaration,
+            ),
+            source = "arg1 is Tag1",
+        )
+
+        assertIs<IsExpression>(expression)
+
+        assertEquals(
+            expected = IsExpression(
+                expression = ReferenceExpression(
+                    referredName = "arg1",
+                    referredDeclaration = ClosedDeclaration(argumentDeclaration),
+                ),
+                checkedTagName = "Tag1",
+            ),
+            actual = expression,
+        )
+
+        expression.validate()
     }
 }

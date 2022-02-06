@@ -18,12 +18,21 @@ def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
 }
 
 typealias Foo = {
-    a : Number,
-    b : Boolean
+    foo1 : Number,
+    foo2 : Boolean
 }
 
-def bar(obj : Foo) {
-    return obj.a
+typealias Bar = {
+    bar1 : Number,
+    bar2 : Boolean
+}
+
+union Union1 =
+    Foo |
+    Bar
+
+def bar(obj : Union1) {
+    return if (obj is Foo) then obj.foo1 else 0
 }
 
 val l1 = listOf(1, 2, 3, 4)
@@ -38,7 +47,7 @@ val n = foo(1, true)
 
 val main = () => {
     return bar({
-        a = 10,
-        b = false
-    })
+        foo1 = 10,
+        foo2 = false
+    } # Foo)
 }

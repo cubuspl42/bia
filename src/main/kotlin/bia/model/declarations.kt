@@ -57,16 +57,25 @@ data class DefDeclaration(
     }
 
     override fun validate() {
-        body?.validate()
+        validateFunction(
+            body = body,
+            explicitReturnType = explicitReturnType,
+        )
+    }
+}
 
-        val explicitReturnType = this.explicitReturnType
-        val inferredReturnType = body?.returned?.type
+fun validateFunction(
+    body: FunctionBody?,
+    explicitReturnType: Type?,
+) {
+    body?.validate()
 
-        if (explicitReturnType != null && inferredReturnType != null) {
-            if (!inferredReturnType.isAssignableTo(explicitReturnType)) {
-                throw TypeCheckError("Inferred return type ${inferredReturnType.toPrettyString()} " +
-                        "is not compatible with the explicitly declared return type: ${explicitReturnType.toPrettyString()}")
-            }
+    val inferredReturnType = body?.returned?.type
+
+    if (explicitReturnType != null && inferredReturnType != null) {
+        if (!inferredReturnType.isAssignableTo(explicitReturnType)) {
+            throw TypeCheckError("Inferred return type ${inferredReturnType.toPrettyString()} " +
+                    "is not compatible with the explicitly declared return type: ${explicitReturnType.toPrettyString()}")
         }
     }
 }
@@ -78,6 +87,11 @@ data class ArgumentDeclaration(
     fun toPrettyString(): String =
         "$givenName : ${valueType.toPrettyString()}"
 }
+
+data class SmartCastDeclaration(
+    override val givenName: String,
+    override val valueType: Type,
+) : ValueDeclaration
 
 data class FunctionDefinition(
     val body: FunctionBody,
@@ -96,6 +110,14 @@ data class FunctionBody(
 data class TypeAliasDeclaration(
     val aliasName: String,
     val aliasedType: Type,
+) : TopLevelDeclaration {
+    override fun validate() {
+    }
+}
+
+data class UnionDeclaration(
+    val unionName: String,
+    val unionType: UnionType,
 ) : TopLevelDeclaration {
     override fun validate() {
     }

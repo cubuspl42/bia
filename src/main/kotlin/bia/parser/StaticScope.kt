@@ -6,15 +6,20 @@ import bia.model.Type
 import bia.model.TypeVariable
 import bia.type_checker.TypeCheckError
 
-sealed interface ScopedDeclaration
+sealed interface ScopedDeclaration {
+    val declaration: ValueDeclaration
+}
 
 data class ClosedDeclaration(
-    val declaration: ValueDeclaration,
+    override val declaration: ValueDeclaration,
 ) : ScopedDeclaration
 
 data class OpenFunctionDeclaration(
     val functionDeclaration: DefDeclaration,
-) : ScopedDeclaration
+) : ScopedDeclaration {
+    override val declaration: ValueDeclaration
+        get() = functionDeclaration
+}
 
 data class AllocateTypeVariableResult(
     val allocatedVariable: TypeVariable,
@@ -55,6 +60,11 @@ abstract class StaticScope {
 
     fun extendOpen(name: String, declaration: DefDeclaration) = StaticScope.of(
         declarations = declarations + (name to OpenFunctionDeclaration(declaration)),
+        typeVariables = types,
+    )
+
+    fun extendScoped(name: String, declaration: ScopedDeclaration) = StaticScope.of(
+        declarations = declarations + (name to declaration),
         typeVariables = types,
     )
 

@@ -12,6 +12,8 @@ And                     : 'and' ;
 Not                     : 'not' ;
 External                : 'external' ;
 Typealias               : 'typealias' ;
+Union                   : 'union' ;
+Is                      : 'is' ;
 
 // Built-in types / type constructors
 NumberType              : 'Number' ;
@@ -54,3 +56,5 @@ Colon                   : ':' ;
 QuestionMark            : '?' ;
 Ellipsis                : '...' ;
 Dot                     : '.' ;
+Pipe                    : '|' ;
+Hash                    : '#' ;

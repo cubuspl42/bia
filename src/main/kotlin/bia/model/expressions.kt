@@ -20,6 +20,9 @@ sealed interface Expression {
     fun evaluate(scope: DynamicScope): Value
 }
 
+val Expression.narrowedType
+    get() = type.narrowedType
+
 data class AdditionExpression(
     val augend: Expression,
     val addend: Expression,
@@ -407,6 +410,13 @@ data class LambdaExpression(
         (argumentListDeclaration as BasicArgumentListDeclaration).argumentDeclarations
     }
 
+    override fun validate() {
+        validateFunction(
+            body = body,
+            explicitReturnType = explicitReturnType,
+        )
+    }
+
     override fun evaluate(scope: DynamicScope): Value = DefinedFunctionValue(
         closure = scope,
         argumentDeclarations = argumentDeclarations,
@@ -415,11 +425,12 @@ data class LambdaExpression(
 }
 
 data class ObjectFieldReadExpression(
-    val obj: Expression,
+    val objectExpression: Expression,
     val readFieldName: String,
 ) : Expression {
     private val objectType by lazy {
-        obj.type as? ObjectType ?: throw TypeCheckError("Tried to read a field from a non-object")
+        objectExpression.narrowedType as? ObjectType
+            ?: throw TypeCheckError("Tried to read a field from a non-object: ${objectExpression.type.toPrettyString()}")
     }
 
     override val type: Type by lazy {
@@ -428,13 +439,57 @@ data class ObjectFieldReadExpression(
     }
 
     override fun evaluate(scope: DynamicScope): Value {
-        val objectValue = obj.evaluate(scope = scope).asObjectValue(
+        val objectValue = objectExpression.evaluate(scope = scope).untag().asObjectValue(
             message = "Only objects can have fields read",
         )
 
         return objectValue.entries[readFieldName]
             ?: throw IllegalArgumentException("Object doesn't have field $readFieldName at runtime")
     }
+}
+
+data class IsExpression(
+    val expression: Expression,
+    val checkedTagName: String,
+) : Expression {
+    private val expressionUnionType by lazy {
+        expression.type as? UnionType ?: throw TypeCheckError("Tried to use 'is' expression on non-union")
+    }
+
+    private val checkedUnionAlternative by lazy {
+        expressionUnionType.alternatives.singleOrNull { it.tagName == checkedTagName }
+            ?: throw TypeCheckError("One union alternative should have a tag '$checkedTagName'")
+    }
+
+    override fun validate() {
+        checkedUnionAlternative
+    }
+
+    override val type = BooleanType
+
+    override fun evaluate(scope: DynamicScope): Value {
+        val taggedValue = expression.evaluate(scope = scope).asTaggedValue()
+
+        return BooleanValue(
+            value = taggedValue.tag == checkedTagName,
+        )
+    }
+}
+
+data class TagExpression(
+    val expression: Expression,
+    val attachedTagName: String,
+) : Expression {
+    override val type: Type
+        get() = TaggedType(
+            taggedType = expression.type,
+            attachedTagName = attachedTagName,
+        )
+
+    override fun evaluate(scope: DynamicScope): Value = TaggedValue(
+        taggedValue = expression.evaluate(scope = scope),
+        tag = attachedTagName,
+    )
 }
 
 private fun evaluateNumberBinaryExpression(

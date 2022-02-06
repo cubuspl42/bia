@@ -6,6 +6,7 @@ program : topLevelDeclaration* EOF ;
 
 topLevelDeclaration
     : typeAlias # typealiasAlt
+    | unionDeclaration # unionDeclarationAlt
     | declaration # declarationAlt
     ;
 
@@ -16,9 +17,11 @@ typeExpression
     | argumentListDeclaration Colon returnType=typeExpression # functionType
     | typeConstructor Lt typeExpression Gt # constructedType
     | typeExpression QuestionMark  # nullableType
-    | name=Identifier # typeReference
+    | typeReference # typeReferenceAlt
     | LeftBrace objectTypeEntryDeclaration (Comma objectTypeEntryDeclaration)* RightBrace # objectType
     ;
+
+typeReference : name=Identifier ;
 
 objectTypeEntryDeclaration
     : fieldName=Identifier Colon fieldType=typeExpression ;
@@ -46,6 +49,8 @@ expression
     | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
     | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow LeftBrace body RightBrace # lambdaExpression
     | expression Dot readFieldName=Identifier # objectFieldRead
+    | expression Is tagName=Identifier # isExpression
+    | expression Hash attachedTagName=Identifier # tagExpression
     ;
 
 callableExpression
@@ -89,3 +94,7 @@ declarationList : declaration* ;
 body : declarationList return_ ;
 
 return_ : Return expression ;
+
+unionDeclaration : Union givenName=Identifier Assign unionEntryDeclaration (Pipe unionEntryDeclaration)* ;
+
+unionEntryDeclaration : typeReference ;

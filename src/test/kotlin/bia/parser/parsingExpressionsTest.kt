@@ -3,6 +3,7 @@ package bia.parser
 import bia.model.CallExpression
 import bia.model.LessThenExpression
 import bia.model.ReferenceExpression
+import bia.model.TagExpression
 import bia.model.TypeVariable
 import bia.test_utils.parseExpression
 import org.junit.jupiter.api.Test
@@ -82,6 +83,23 @@ internal class ParsingExpressionsTest {
             actual = parseExpression(
                 scopeTypeVariables = listOf(aTv),
                 source = "(a < b)<A>(c)",
+            ),
+        )
+    }
+
+    @Test
+    fun parseTag() {
+        assertEquals(
+            expected = TagExpression(
+                expression = ReferenceExpression(
+                    referredName = "foo",
+                    referredDeclaration = null,
+                ),
+                attachedTagName = "Tag1",
+            ),
+            actual = parseExpression(
+                scopeTypeVariables = listOf(),
+                source = "foo # Tag1",
             ),
         )
     }

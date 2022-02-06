@@ -1,11 +1,16 @@
 package bia.model
 
+import bia.type_checker.TypeCheckError
+
 sealed interface Type {
     fun toPrettyString(): String
 
     fun isAssignableDirectlyTo(other: Type): Boolean = false
 
     fun resolveTypeVariables(mapping: TypeVariableMapping): Type
+
+    val narrowedType: Type
+        get() = this
 }
 
 data class TypeVariableMapping(
@@ -32,8 +37,12 @@ fun Type.isAssignableTo(other: Type): Boolean =
     when {
         this == other -> true
         other is NullableType -> isAssignableTo(other.baseType)
+//        other is UnionType -> isAssignableToUnion(other)
         else -> isAssignableDirectlyTo(other)
     }
+
+//fun Type.isAssignableToUnion(union: UnionType): Boolean =
+//    union.alternatives.count { this.isAssignableTo(it.type) } == 1
 
 object NumberType : SpecificType {
     override fun toPrettyString(): String = "Number"
@@ -122,6 +131,60 @@ data class ObjectType(
                 type.resolveTypeVariables(mapping = mapping)
             },
         )
+}
+
+data class UnionAlternative(
+    val tagName: String,
+    val type: Type,
+)
+
+sealed class UnionType : SpecificType {
+    abstract val alternatives: Set<UnionAlternative>
+
+    override fun toPrettyString(): String =
+        alternatives.joinToString(separator = " | ") { it.tagName }
+
+    override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
+        this
+
+    fun getAlternative(tagName: String): UnionAlternative? =
+        alternatives.singleOrNull { it.tagName == tagName }
+}
+
+data class WideUnionType(
+    override val alternatives: Set<UnionAlternative>,
+) : UnionType()
+
+data class NarrowUnionType(
+    override val alternatives: Set<UnionAlternative>,
+    val narrowedAlternative: UnionAlternative,
+) : UnionType() {
+    override fun toPrettyString(): String =
+        "${alternatives.joinToString(separator = " | ") { it.tagName }} [narrowed to ${narrowedAlternative.tagName}]"
+
+    override val narrowedType = narrowedAlternative.type
+}
+
+data class TaggedType(
+    val taggedType: Type,
+    val attachedTagName: String,
+) : SpecificType {
+    override fun toPrettyString(): String =
+        "${taggedType.toPrettyString()} # $attachedTagName"
+
+    override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
+        copy(
+            taggedType = taggedType.resolveTypeVariables(mapping = mapping),
+        )
+
+    override fun isAssignableDirectlyTo(other: Type): Boolean {
+        return if (other is UnionType) {
+            val alternative = other.alternatives.singleOrNull { it.tagName == attachedTagName }
+                ?: throw TypeCheckError("Union type $other doesn't have an alternative tagged '$attachedTagName'")
+
+            taggedType.isAssignableTo(alternative.type)
+        } else false
+    }
 }
 
 private fun typeConstructorToPrettyString(

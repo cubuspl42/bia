@@ -6,6 +6,8 @@ import java.math.BigInteger
 
 sealed interface Value {
     val value: Any
+
+    fun untag(): Value = this
 }
 
 data class NumberValue(
@@ -72,6 +74,16 @@ data class ObjectValue(
         get() = entries
 }
 
+data class TaggedValue(
+    val taggedValue: Value,
+    val tag: String,
+) : Value {
+    override val value: Any
+        get() = this
+
+    override fun untag(): Value = taggedValue
+}
+
 fun Value.asNumberValue(message: String = "Expected a number, got"): NumberValue =
     this as? NumberValue ?: throw UnsupportedOperationException("$message: $this")
 
@@ -92,3 +104,6 @@ fun Value.asFunctionValue(message: String = "Expected a function, got"): Functio
 
 fun Value.asObjectValue(message: String = "Expected an object, got"): ObjectValue =
     this as? ObjectValue ?: throw UnsupportedOperationException("$message: $this")
+
+fun Value.asTaggedValue(message: String = "Expected a tagged value, got"): TaggedValue =
+    this as? TaggedValue ?: throw UnsupportedOperationException("$message: $this")

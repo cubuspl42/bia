@@ -21,10 +21,12 @@ import bia.model.GreaterThenExpression
 import bia.model.IfExpression
 import bia.model.IntLiteralExpression
 import bia.model.IntegerDivisionExpression
+import bia.model.IsExpression
 import bia.model.LambdaExpression
 import bia.model.LessThenExpression
 import bia.model.ListType
 import bia.model.MultiplicationExpression
+import bia.model.NarrowUnionType
 import bia.model.NotExpression
 import bia.model.NullableType
 import bia.model.NumberType
@@ -36,14 +38,20 @@ import bia.model.Program
 import bia.model.ReferenceExpression
 import bia.model.ReminderExpression
 import bia.model.SequenceType
+import bia.model.SmartCastDeclaration
 import bia.model.SubtractionExpression
+import bia.model.TagExpression
 import bia.model.TopLevelDeclaration
 import bia.model.Type
 import bia.model.TypeAliasDeclaration
 import bia.model.TypeVariable
+import bia.model.UnionAlternative
+import bia.model.UnionDeclaration
+import bia.model.UnionType
 import bia.model.ValDeclaration
 import bia.model.ValueDefinition
 import bia.model.VarargArgumentListDeclaration
+import bia.model.WideUnionType
 import bia.parser.antlr.BiaLexer
 import bia.parser.antlr.BiaParser
 import bia.parser.antlr.BiaParserBaseVisitor
@@ -78,6 +86,10 @@ fun transformTopLevelDeclarations(
             name = topLevelDeclaration.aliasName,
             type = topLevelDeclaration.aliasedType,
         )
+        is UnionDeclaration -> scope.extendType(
+            name = topLevelDeclaration.unionName,
+            type = topLevelDeclaration.unionType,
+        )
     }
 
     listOf(topLevelDeclaration) + transformTopLevelDeclarations(
@@ -104,6 +116,23 @@ private fun transformTopLevelDeclaration(
                 typeExpression = ctx.aliasedType,
             )
         )
+
+    override fun visitUnionDeclaration(
+        ctx: BiaParser.UnionDeclarationContext,
+    ): TopLevelDeclaration = UnionDeclaration(
+        unionName = ctx.givenName.text,
+        unionType = WideUnionType(
+            alternatives = ctx.unionEntryDeclaration().map {
+                UnionAlternative(
+                    tagName = it.typeReference().text,
+                    type = transformTypeReference(
+                        scope = scope,
+                        typeReference = it.typeReference(),
+                    ),
+                )
+            }.toSet()
+        ),
+    )
 }.visit(topLevelDeclaration)
 
 fun transformBody(
@@ -453,14 +482,19 @@ fun transformExpression(
         }
     }
 
-    override fun visitIfExpression(ctx: BiaParser.IfExpressionContext): Expression =
-        IfExpression(
-            guard = transformExpression(
-                scope = scope,
-                expression = ctx.guard,
-            ),
+    override fun visitIfExpression(ctx: BiaParser.IfExpressionContext): Expression {
+        val guard = transformExpression(
+            scope = scope,
+            expression = ctx.guard,
+        )
+
+        return IfExpression(
+            guard = guard,
             trueBranch = transformExpression(
-                scope = scope,
+                scope = processGuardSmartCast(
+                    scope = scope,
+                    guard = guard,
+                ),
                 expression = ctx.trueBranch,
             ),
             falseBranch = transformExpression(
@@ -468,6 +502,7 @@ fun transformExpression(
                 expression = ctx.falseBranch,
             ),
         )
+    }
 
     override fun visitLambdaExpression(ctx: BiaParser.LambdaExpressionContext): Expression {
         val (typeVariables, scopeWithTypeVariables) = transformTypeVariableDeclarations(
@@ -502,13 +537,66 @@ fun transformExpression(
 
     override fun visitObjectFieldRead(ctx: BiaParser.ObjectFieldReadContext) =
         ObjectFieldReadExpression(
-            obj = transformExpression(
+            objectExpression = transformExpression(
                 scope = scope,
                 expression = ctx.expression(),
             ),
             readFieldName = ctx.readFieldName.text,
         )
+
+    override fun visitIsExpression(
+        ctx: BiaParser.IsExpressionContext,
+    ): Expression = IsExpression(
+        expression = transformExpression(
+            scope = scope,
+            expression = ctx.expression(),
+        ),
+        checkedTagName = ctx.tagName.text,
+    )
+
+    override fun visitTagExpression(
+        ctx: BiaParser.TagExpressionContext,
+    ): Expression = TagExpression(
+        expression = transformExpression(
+            scope = scope,
+            expression = ctx.expression(),
+        ),
+        attachedTagName = ctx.attachedTagName.text,
+    )
 }.visit(expression)
+
+private fun processGuardSmartCast(
+    scope: StaticScope,
+    guard: Expression,
+): StaticScope = if (guard is IsExpression) {
+    val isExpression = guard.expression
+
+    if (isExpression is ReferenceExpression) {
+        val referredDeclaration = isExpression.referredDeclaration
+
+        if (referredDeclaration != null) {
+            val declaration = referredDeclaration.declaration
+            val valueType = declaration.valueType
+
+            if (valueType is UnionType) {
+                val checkedAlternative = valueType.getAlternative(tagName = guard.checkedTagName)
+
+                if (checkedAlternative != null) {
+                    scope.extendClosed(
+                        name = declaration.givenName,
+                        declaration = SmartCastDeclaration(
+                            givenName = declaration.givenName,
+                            valueType = NarrowUnionType(
+                                alternatives = valueType.alternatives,
+                                narrowedAlternative = checkedAlternative,
+                            ),
+                        ),
+                    )
+                } else scope
+            } else scope
+        } else scope
+    } else scope
+} else scope
 
 fun transformReferenceExpression(
     scope: StaticScope,
@@ -565,7 +653,7 @@ fun transformTypeExpression(
     )
 
     override fun visitTypeReference(ctx: BiaParser.TypeReferenceContext): Type =
-        scope.getType(givenName = ctx.name.text)
+        transformTypeReference(scope = scope, typeReference = ctx)
 
     override fun visitObjectType(ctx: BiaParser.ObjectTypeContext) = ObjectType(
         entries = ctx.objectTypeEntryDeclaration().associate {
@@ -576,6 +664,11 @@ fun transformTypeExpression(
         }
     )
 }.visit(typeExpression)
+
+private fun transformTypeReference(
+    scope: StaticScope,
+    typeReference: BiaParser.TypeReferenceContext,
+): Type = scope.getType(givenName = typeReference.name.text)
 
 fun transformTypeConstructor(
     typeConstructor: BiaParser.TypeConstructorContext,
