@@ -247,7 +247,7 @@ data class ReferenceExpression(
             this.referredDeclaration ?: throw TypeCheckError("Unresolved reference ($referredName) has no type")
 
         when (referredDeclaration) {
-            is ClosedDeclaration -> referredDeclaration.declaration.type
+            is ClosedDeclaration -> referredDeclaration.declaration.valueType
             is OpenFunctionDeclaration -> referredDeclaration.functionDeclaration.explicitType
                 ?: throw TypeCheckError("Recursively referenced function $referredName has no explicit return type")
         }

@@ -27,7 +27,7 @@ data class BasicArgumentListDeclaration(
 
             fun areArgumentsAssignable() = argumentDeclarations.zip(otherArgumentDeclarations)
                 .all { (argumentDeclaration, otherArgumentDeclaration) ->
-                    argumentDeclaration.type.isAssignableTo(otherArgumentDeclaration.type)
+                    argumentDeclaration.valueType.isAssignableTo(otherArgumentDeclaration.valueType)
                 }
 
             argumentDeclarations.size <= otherArgumentDeclarations.size && areArgumentsAssignable()
@@ -40,7 +40,7 @@ data class BasicArgumentListDeclaration(
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping) = BasicArgumentListDeclaration(
         argumentDeclarations = argumentDeclarations.map {
-            it.copy(type = it.type.resolveTypeVariables(mapping = mapping))
+            it.copy(valueType = it.valueType.resolveTypeVariables(mapping = mapping))
         },
     )
 
@@ -73,10 +73,10 @@ data class BasicArgumentListDeclaration(
 
         arguments.zip(argumentDeclarations)
             .forEachIndexed { index, (argument, argumentDeclaration) ->
-                if (!argument.type.isAssignableTo(argumentDeclaration.type)) {
+                if (!argument.type.isAssignableTo(argumentDeclaration.valueType)) {
                     throw TypeCheckError(
                         "Function $functionName argument #${index + 1} has type ${argument.type.toPrettyString()} " +
-                                "which can't be assigned to ${argumentDeclaration.type.toPrettyString()}",
+                                "which can't be assigned to ${argumentDeclaration.valueType.toPrettyString()}",
                     )
                 }
             }
@@ -93,7 +93,7 @@ data class VarargArgumentListDeclaration(
                 val argumentDeclarations = other.argumentDeclarations
 
                 fun areArgumentsAssignable() = argumentDeclarations.all { argumentDeclaration ->
-                    argumentDeclaration.type.isAssignableTo(type)
+                    argumentDeclaration.valueType.isAssignableTo(type)
                 }
 
                 areArgumentsAssignable()

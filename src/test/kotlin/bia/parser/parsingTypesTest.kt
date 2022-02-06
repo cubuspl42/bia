@@ -1,16 +1,9 @@
 package bia.parser
 
 import bia.model.BooleanType
-import bia.model.CallExpression
-import bia.model.Declaration
-import bia.model.Expression
-import bia.model.LessThenExpression
 import bia.model.NumberType
 import bia.model.ObjectType
-import bia.model.ReferenceExpression
 import bia.model.Type
-import bia.model.TypeVariable
-import bia.test_utils.parseExpression
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 

@@ -6,7 +6,7 @@ import bia.model.ArgumentDeclaration
 import bia.model.ArgumentListDeclaration
 import bia.model.BasicArgumentListDeclaration
 import bia.model.BigIntegerType
-import bia.model.BodyDeclaration
+import bia.model.ValueDeclaration
 import bia.model.BooleanLiteralExpression
 import bia.model.BooleanType
 import bia.model.CallExpression
@@ -14,7 +14,7 @@ import bia.model.DivisionExpression
 import bia.model.EqualsExpression
 import bia.model.Expression
 import bia.model.FunctionBody
-import bia.model.FunctionDeclaration
+import bia.model.DefDeclaration
 import bia.model.FunctionDefinition
 import bia.model.FunctionType
 import bia.model.GreaterThenExpression
@@ -32,13 +32,17 @@ import bia.model.ObjectFieldReadExpression
 import bia.model.ObjectLiteralExpression
 import bia.model.ObjectType
 import bia.model.OrExpression
+import bia.model.Program
 import bia.model.ReferenceExpression
 import bia.model.ReminderExpression
 import bia.model.SequenceType
 import bia.model.SubtractionExpression
+import bia.model.TopLevelDeclaration
 import bia.model.Type
+import bia.model.TypeAliasDeclaration
 import bia.model.TypeVariable
-import bia.model.ValueDeclaration
+import bia.model.ValDeclaration
+import bia.model.ValueDefinition
 import bia.model.VarargArgumentListDeclaration
 import bia.parser.antlr.BiaLexer
 import bia.parser.antlr.BiaParser
@@ -49,10 +53,58 @@ import org.antlr.v4.runtime.ParserRuleContext
 fun transformProgram(
     outerScope: StaticScope,
     parser: BiaParser,
-): FunctionBody = transformBody(
-    outerScope = outerScope,
-    body = parser.program().body(),
+): Program = Program(
+    topLevelDeclarations = transformTopLevelDeclarations(
+        scope = outerScope,
+        inputDeclarations = parser.program().topLevelDeclaration(),
+    ),
 )
+
+fun transformTopLevelDeclarations(
+    scope: StaticScope,
+    inputDeclarations: List<BiaParser.TopLevelDeclarationContext>,
+): List<TopLevelDeclaration> = inputDeclarations.firstOrNull()?.let {
+    val topLevelDeclaration = transformTopLevelDeclaration(
+        scope = scope,
+        topLevelDeclaration = it,
+    )
+
+    val newScope = when (topLevelDeclaration) {
+        is ValueDeclaration -> scope.extendClosed(
+            name = topLevelDeclaration.givenName,
+            declaration = topLevelDeclaration,
+        )
+        is TypeAliasDeclaration -> scope.extendType(
+            name = topLevelDeclaration.aliasName,
+            type = topLevelDeclaration.aliasedType,
+        )
+    }
+
+    listOf(topLevelDeclaration) + transformTopLevelDeclarations(
+        scope = newScope,
+        inputDeclarations = inputDeclarations.drop(1),
+    )
+} ?: emptyList()
+
+private fun transformTopLevelDeclaration(
+    scope: StaticScope,
+    topLevelDeclaration: BiaParser.TopLevelDeclarationContext,
+): TopLevelDeclaration = object : BiaParserBaseVisitor<TopLevelDeclaration>() {
+    override fun visitDeclaration(ctx: BiaParser.DeclarationContext): TopLevelDeclaration =
+        transformValueDeclaration(
+            scope = scope,
+            declaration = ctx,
+        )
+
+    override fun visitTypeAlias(ctx: BiaParser.TypeAliasContext) =
+        TypeAliasDeclaration(
+            aliasName = ctx.aliasName.text,
+            aliasedType = transformTypeExpression(
+                scope = scope,
+                typeExpression = ctx.aliasedType,
+            )
+        )
+}.visit(topLevelDeclaration)
 
 fun transformBody(
     outerScope: StaticScope,
@@ -98,15 +150,15 @@ fun transformFunction(
 
 data class TransformDeclarationsResult(
     val finalScope: StaticScope,
-    val declarations: List<BodyDeclaration>,
+    val declarations: List<ValueDefinition>,
 )
 
 fun transformDeclarations(
     scope: StaticScope,
     inputDeclarations: List<BiaParser.DeclarationContext>,
-    outputDeclarations: List<BodyDeclaration>,
+    outputDeclarations: List<ValueDefinition>,
 ): TransformDeclarationsResult = inputDeclarations.firstOrNull()?.let {
-    val declaration = transformBodyDeclaration(
+    val declaration = transformValueDeclaration(
         scope = scope,
         declaration = it,
     )
@@ -124,13 +176,13 @@ fun transformDeclarations(
     declarations = outputDeclarations,
 )
 
-fun transformBodyDeclaration(
+fun transformValueDeclaration(
     scope: StaticScope,
     declaration: BiaParser.DeclarationContext,
-): BodyDeclaration = object : BiaParserBaseVisitor<BodyDeclaration>() {
+): ValueDefinition = object : BiaParserBaseVisitor<ValueDefinition>() {
     override fun visitValueDeclaration(
         ctx: BiaParser.ValueDeclarationContext,
-    ) = ValueDeclaration(
+    ) = ValDeclaration(
         givenName = ctx.name.text,
         initializer = transformExpression(
             scope = scope,
@@ -140,7 +192,7 @@ fun transformBodyDeclaration(
 
     override fun visitFunctionDeclaration(
         ctx: BiaParser.FunctionDeclarationContext,
-    ): BodyDeclaration {
+    ): ValueDefinition {
         val functionGivenName = ctx.name.text
 
         val isExternal = ctx.External() != null
@@ -164,12 +216,12 @@ fun transformBodyDeclaration(
 
         val bodyOrNull: BiaParser.BodyContext? = ctx.body()
 
-        fun transformDefinedFunction(): FunctionDeclaration {
+        fun transformDefinedFunction(): DefDeclaration {
             val body = bodyOrNull ?: throw TypeCheckError("Non-external function needs to have a body")
 
             return object {
-                val functionDeclaration: FunctionDeclaration by lazy {
-                    FunctionDeclaration(
+                val functionDeclaration: DefDeclaration by lazy {
+                    DefDeclaration(
                         givenName = functionGivenName,
                         typeVariables = typeVariables,
                         argumentListDeclaration = argumentListDeclaration,
@@ -196,12 +248,12 @@ fun transformBodyDeclaration(
             }.functionDeclaration
         }
 
-        fun transformExternalFunction(): FunctionDeclaration {
+        fun transformExternalFunction(): DefDeclaration {
             if (bodyOrNull != null) throw TypeCheckError("External functions cannot have a body")
 
             if (explicitReturnType == null) throw TypeCheckError("External functions needs an explicit return type")
 
-            return FunctionDeclaration(
+            return DefDeclaration(
                 givenName = ctx.name.text,
                 typeVariables = typeVariables,
                 argumentListDeclaration = argumentListDeclaration,
@@ -267,7 +319,7 @@ fun transformArgumentListDeclarations(
         argumentDeclarations = ctx.argumentDeclaration().map {
             ArgumentDeclaration(
                 givenName = it.name.text,
-                type = transformTypeExpression(
+                valueType = transformTypeExpression(
                     scope = scope,
                     typeExpression = it.typeExpression(),
                 ),
@@ -512,8 +564,8 @@ fun transformTypeExpression(
         ),
     )
 
-    override fun visitGenericArgumentReference(ctx: BiaParser.GenericArgumentReferenceContext): Type =
-        scope.getClosestTypeVariable(givenName = ctx.name.text)
+    override fun visitTypeReference(ctx: BiaParser.TypeReferenceContext): Type =
+        scope.getType(givenName = ctx.name.text)
 
     override fun visitObjectType(ctx: BiaParser.ObjectTypeContext) = ObjectType(
         entries = ctx.objectTypeEntryDeclaration().associate {

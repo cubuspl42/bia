@@ -11,6 +11,7 @@ Or                      : 'or' ;
 And                     : 'and' ;
 Not                     : 'not' ;
 External                : 'external' ;
+Typealias               : 'typealias' ;
 
 // Built-in types / type constructors
 NumberType              : 'Number' ;

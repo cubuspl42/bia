@@ -17,10 +17,12 @@ def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
     })()
 }
 
-def bar(obj : {
+typealias Foo = {
     a : Number,
     b : Boolean
-}) {
+}
+
+def bar(obj : Foo) {
     return obj.a
 }
 
@@ -34,7 +36,9 @@ val l3 = map<Number, Boolean>(l1, (e : Number) => {
 
 val n = foo(1, true)
 
-return bar({
-    a = 10,
-    b = false
-})
+val main = () => {
+    return bar({
+        a = 10,
+        b = false
+    })
+}

@@ -1,6 +1,6 @@
 package bia.test_utils
 
-import bia.model.Declaration
+import bia.model.ValueDeclaration
 import bia.model.Expression
 import bia.model.TypeVariable
 import bia.parser.ClosedDeclaration
@@ -9,7 +9,7 @@ import bia.parser.buildAntlrParser
 import bia.parser.transformExpression
 
 fun parseExpression(
-    scopeDeclarations: List<Declaration> = emptyList(),
+    scopeDeclarations: List<ValueDeclaration> = emptyList(),
     scopeTypeVariables: List<TypeVariable> = emptyList(),
     source: String,
 ): Expression {

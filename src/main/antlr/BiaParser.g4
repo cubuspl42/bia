@@ -2,7 +2,12 @@ parser grammar BiaParser;
 
 options { tokenVocab = BiaLexer; }
 
-program : body EOF ;
+program : topLevelDeclaration* EOF ;
+
+topLevelDeclaration
+    : typeAlias # typealiasAlt
+    | declaration # declarationAlt
+    ;
 
 typeExpression
     : NumberType # numberType
@@ -11,7 +16,7 @@ typeExpression
     | argumentListDeclaration Colon returnType=typeExpression # functionType
     | typeConstructor Lt typeExpression Gt # constructedType
     | typeExpression QuestionMark  # nullableType
-    | name=Identifier # genericArgumentReference
+    | name=Identifier # typeReference
     | LeftBrace objectTypeEntryDeclaration (Comma objectTypeEntryDeclaration)* RightBrace # objectType
     ;
 
@@ -74,6 +79,8 @@ argumentListDeclaration
     ;
 
 argumentDeclaration: name=Identifier Colon typeExpression;
+
+typeAlias : Typealias aliasName=Identifier Assign aliasedType=typeExpression ;
 
 declaration : valueDeclaration | functionDeclaration ;
 

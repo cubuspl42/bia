@@ -11,7 +11,7 @@ import kotlin.test.assertIs
 class ExpressionsTest {
     @Test
     fun testObjectLiteral() {
-        val xDeclaration = ValueDeclaration(
+        val xDeclaration = ValDeclaration(
             givenName = "x",
             initializer = IntLiteralExpression(value = -1),
         )
@@ -76,7 +76,7 @@ class ExpressionsTest {
 
     @Test
     fun testObjectFieldRead() {
-        val objectDeclaration = ValueDeclaration(
+        val objectDeclaration = ValDeclaration(
             givenName = "obj",
             initializer = ObjectLiteralExpression(
                 entries = mapOf(

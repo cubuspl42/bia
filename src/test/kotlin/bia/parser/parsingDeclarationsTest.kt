@@ -1,9 +1,8 @@
 package bia.parser
 
-import bia.model.Declaration
-import bia.model.FunctionDeclaration
+import bia.model.ValueDeclaration
+import bia.model.DefDeclaration
 import bia.model.NumberType
-import bia.model.TypeVariable
 import bia.model.VarargArgumentListDeclaration
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -16,7 +15,7 @@ internal class ParsingDeclarationsTest {
             source = "external def f(a : Number...): Boolean",
         )
 
-        assertIs<FunctionDeclaration>(declaration)
+        assertIs<DefDeclaration>(declaration)
 
         assertEquals(
             expected = VarargArgumentListDeclaration(
@@ -30,13 +29,13 @@ internal class ParsingDeclarationsTest {
 
 private fun parseDeclaration(
     source: String,
-): Declaration {
+): ValueDeclaration {
     val parser = buildAntlrParser(
         source = source,
         sourceName = "<declaration>",
     )
 
-    return transformBodyDeclaration(
+    return transformValueDeclaration(
         scope = StaticScope.empty,
         declaration = parser.declaration(),
     )

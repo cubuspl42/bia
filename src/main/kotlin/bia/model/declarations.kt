@@ -2,20 +2,22 @@ package bia.model
 
 import bia.type_checker.TypeCheckError
 
-sealed interface Declaration {
-    val givenName: String
-    val type: Type
-}
-
-sealed interface BodyDeclaration : Declaration {
+sealed interface TopLevelDeclaration {
     fun validate()
 }
 
-data class ValueDeclaration(
+sealed interface ValueDeclaration {
+    val givenName: String
+    val valueType: Type
+}
+
+sealed interface ValueDefinition : ValueDeclaration, TopLevelDeclaration
+
+data class ValDeclaration(
     override val givenName: String,
     val initializer: Expression,
-) : BodyDeclaration {
-    override val type: Type by lazy {
+) : ValueDefinition {
+    override val valueType: Type by lazy {
         initializer.type
     }
 
@@ -24,13 +26,13 @@ data class ValueDeclaration(
     }
 }
 
-data class FunctionDeclaration(
+data class DefDeclaration(
     override val givenName: String,
     val typeVariables: List<TypeVariable>,
     val argumentListDeclaration: ArgumentListDeclaration,
     val explicitReturnType: Type?,
     val buildDefinition: () -> FunctionDefinition?,
-) : BodyDeclaration {
+) : ValueDefinition {
     val definition by lazy { buildDefinition() }
 
     val body: FunctionBody? by lazy { definition?.body }
@@ -43,7 +45,7 @@ data class FunctionDeclaration(
         )
     }
 
-    override val type: FunctionType by lazy {
+    override val valueType: FunctionType by lazy {
         val returnType = explicitReturnType ?: body?.returned?.type
         ?: throw RuntimeException("Could not determine function return type")
 
@@ -55,7 +57,6 @@ data class FunctionDeclaration(
     }
 
     override fun validate() {
-
         body?.validate()
 
         val explicitReturnType = this.explicitReturnType
@@ -72,10 +73,10 @@ data class FunctionDeclaration(
 
 data class ArgumentDeclaration(
     override val givenName: String,
-    override val type: Type,
-) : Declaration {
+    override val valueType: Type,
+) : ValueDeclaration {
     fun toPrettyString(): String =
-        "$givenName : ${type.toPrettyString()}"
+        "$givenName : ${valueType.toPrettyString()}"
 }
 
 data class FunctionDefinition(
@@ -83,11 +84,19 @@ data class FunctionDefinition(
 )
 
 data class FunctionBody(
-    val declarations: List<BodyDeclaration>,
+    val declarations: List<ValueDefinition>,
     val returned: Expression,
 ) {
     fun validate() {
         declarations.forEach { it.validate() }
         returned.validate()
+    }
+}
+
+data class TypeAliasDeclaration(
+    val aliasName: String,
+    val aliasedType: Type,
+) : TopLevelDeclaration {
+    override fun validate() {
     }
 }

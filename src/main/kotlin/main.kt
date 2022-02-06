@@ -1,6 +1,8 @@
-import bia.interpreter.evaluateProgramBody
+import bia.interpreter.evaluateProgram
 import bia.Prelude
+import bia.model.asFunctionValue
 import bia.parser.parseProgram
+import java.lang.IllegalStateException
 
 const val sourceName = "test.bia"
 
@@ -11,17 +13,23 @@ fun main() {
 
     val source = getResourceAsText(sourceName) ?: throw RuntimeException("Couldn't load the source file")
 
-    val programBody = parseProgram(
+    val program = parseProgram(
         prelude = prelude,
         sourceName = sourceName,
         source = source,
     )
 
-    programBody.validate()
+    program.validate()
 
-    val result = evaluateProgramBody(
-        programBody = programBody,
+    val scope = evaluateProgram(
+        program = program,
     )
+
+    val mainValue = scope.getValue("main") ?: throw IllegalStateException("There's no value named main")
+
+    val mainFunction = mainValue.asFunctionValue("main is not a function")
+
+    val result = mainFunction.call(emptyList())
 
     println("Result: $result")
 }

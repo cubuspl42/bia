@@ -1,23 +1,26 @@
 package bia.interpreter
 
 import bia.model.BasicArgumentListDeclaration
-import bia.model.BodyDeclaration
+import bia.model.ValueDeclaration
 import bia.model.Expression
 import bia.model.FunctionBody
-import bia.model.FunctionDeclaration
+import bia.model.DefDeclaration
 import bia.model.DefinedFunctionValue
+import bia.model.Program
 import bia.model.Value
-import bia.model.ValueDeclaration
+import bia.model.ValDeclaration
+import bia.model.ValueDefinition
 
-fun evaluateProgramBody(
-    programBody: FunctionBody,
-): Value {
-    val result = evaluateBody(
-        outerScope = builtinScope,
-        body = programBody,
-    )
+fun evaluateProgram(
+    program: Program,
+): DynamicScope {
+    val valueDefinitions = program.topLevelDeclarations.filterIsInstance<ValueDefinition>()
 
-    return result
+    val finalScope = valueDefinitions.fold(builtinScope) { scope, declaration ->
+        executeDeclaration(scope = scope, declaration = declaration)
+    }
+
+    return finalScope
 }
 
 fun evaluateBody(
@@ -38,13 +41,13 @@ fun evaluateBody(
 
 private fun executeDeclaration(
     scope: DynamicScope,
-    declaration: BodyDeclaration,
+    declaration: ValueDefinition,
 ): DynamicScope = when (declaration) {
-    is ValueDeclaration -> executeValueDeclaration(
+    is ValDeclaration -> executeValueDeclaration(
         scope = scope,
         declaration = declaration,
     )
-    is FunctionDeclaration -> executeFunctionDeclaration(
+    is DefDeclaration -> executeFunctionDeclaration(
         scope = scope,
         declaration = declaration,
     )
@@ -52,7 +55,7 @@ private fun executeDeclaration(
 
 fun executeValueDeclaration(
     scope: DynamicScope,
-    declaration: ValueDeclaration,
+    declaration: ValDeclaration,
 ): DynamicScope = scope.extend(
     name = declaration.givenName,
     value = evaluateExpression(
@@ -63,7 +66,7 @@ fun executeValueDeclaration(
 
 private fun executeFunctionDeclaration(
     scope: DynamicScope,
-    declaration: FunctionDeclaration,
+    declaration: DefDeclaration,
 ): DynamicScope {
     val body = declaration.body
 

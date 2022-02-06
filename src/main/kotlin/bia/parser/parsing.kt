@@ -1,7 +1,7 @@
 package bia.parser
 
-import bia.model.FunctionBody
 import bia.Prelude
+import bia.model.Program
 import bia.parser.antlr.BiaLexer
 import bia.parser.antlr.BiaParser
 import org.antlr.v4.runtime.CharStreams
@@ -11,7 +11,7 @@ fun parseProgram(
     prelude: Prelude,
     sourceName: String,
     source: String,
-): FunctionBody {
+): Program {
     val parser = buildAntlrParser(source, sourceName)
 
     val programBody = transformProgram(
