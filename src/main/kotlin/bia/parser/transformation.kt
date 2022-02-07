@@ -48,6 +48,7 @@ import bia.model.TypeVariable
 import bia.model.UnionAlternative
 import bia.model.UnionDeclaration
 import bia.model.UnionType
+import bia.model.UntagExpression
 import bia.model.ValDeclaration
 import bia.model.ValueDefinition
 import bia.model.VarargArgumentListDeclaration
@@ -562,6 +563,15 @@ fun transformExpression(
             expression = ctx.expression(),
         ),
         attachedTagName = ctx.attachedTagName.text,
+    )
+
+    override fun visitUntagExpression(
+        ctx: BiaParser.UntagExpressionContext,
+    ): Expression = UntagExpression(
+        expression = transformExpression(
+            scope = scope,
+            expression = ctx.expression(),
+        )
     )
 }.visit(expression)
 

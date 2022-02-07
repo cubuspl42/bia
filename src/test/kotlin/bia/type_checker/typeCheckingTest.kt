@@ -13,6 +13,7 @@ import bia.model.ReferenceExpression
 import bia.model.SmartCastDeclaration
 import bia.model.TaggedType
 import bia.model.UnionAlternative
+import bia.model.UntagExpression
 import bia.model.WideUnionType
 import bia.model.isAssignableTo
 import bia.parser.ClosedDeclaration
@@ -59,23 +60,27 @@ internal class TypeCheckingTest {
             referredDeclaration = ClosedDeclaration(argumentDeclaration),
         )
 
+        val objectExpression = ReferenceExpression(
+            referredName = "arg1",
+            referredDeclaration = ClosedDeclaration(
+                SmartCastDeclaration(
+                    givenName = "arg1",
+                    valueType = NarrowUnionType(
+                        alternatives = unionType.alternatives,
+                        narrowedAlternative = alternative1,
+                    )
+                ),
+            ),
+        )
+
         val ifExpression = IfExpression(
             guard = IsExpression(
                 expression = argumentReference,
                 checkedTagName = "Tag1",
             ),
             trueBranch = ObjectFieldReadExpression(
-                objectExpression = ReferenceExpression(
-                    referredName = "arg1",
-                    referredDeclaration = ClosedDeclaration(
-                        SmartCastDeclaration(
-                            givenName = "arg1",
-                            valueType = NarrowUnionType(
-                                alternatives = unionType.alternatives,
-                                narrowedAlternative = alternative1,
-                            )
-                        ),
-                    ),
+                objectExpression = UntagExpression(
+                    expression = objectExpression,
                 ),
                 readFieldName = "field1"
             ),

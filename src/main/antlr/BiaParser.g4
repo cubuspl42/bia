@@ -51,6 +51,7 @@ expression
     | expression Dot readFieldName=Identifier # objectFieldRead
     | expression Is tagName=Identifier # isExpression
     | expression Hash attachedTagName=Identifier # tagExpression
+    | Untag expression # untagExpression
     ;
 
 callableExpression

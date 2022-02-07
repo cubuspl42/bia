@@ -32,7 +32,7 @@ union Union1 =
     Bar
 
 def bar(obj : Union1) {
-    return if (obj is Foo) then obj.foo1 else 0
+    return if (obj is Foo) then (untag obj).foo1 else 0
 }
 
 val l1 = listOf(1, 2, 3, 4)

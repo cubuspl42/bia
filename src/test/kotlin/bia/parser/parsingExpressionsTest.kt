@@ -5,6 +5,7 @@ import bia.model.LessThenExpression
 import bia.model.ReferenceExpression
 import bia.model.TagExpression
 import bia.model.TypeVariable
+import bia.model.UntagExpression
 import bia.test_utils.parseExpression
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -103,5 +104,20 @@ internal class ParsingExpressionsTest {
             ),
         )
     }
-}
 
+    @Test
+    fun parseUntag() {
+        assertEquals(
+            expected = UntagExpression(
+                expression = ReferenceExpression(
+                    referredName = "foo",
+                    referredDeclaration = null,
+                ),
+            ),
+            actual = parseExpression(
+                scopeTypeVariables = listOf(),
+                source = "untag foo",
+            ),
+        )
+    }
+}

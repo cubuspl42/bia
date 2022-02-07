@@ -20,9 +20,6 @@ sealed interface Expression {
     fun evaluate(scope: DynamicScope): Value
 }
 
-val Expression.narrowedType
-    get() = type.narrowedType
-
 data class AdditionExpression(
     val augend: Expression,
     val addend: Expression,
@@ -429,7 +426,7 @@ data class ObjectFieldReadExpression(
     val readFieldName: String,
 ) : Expression {
     private val objectType by lazy {
-        objectExpression.narrowedType as? ObjectType
+        objectExpression.type as? ObjectType
             ?: throw TypeCheckError("Tried to read a field from a non-object: ${objectExpression.type.toPrettyString()}")
     }
 
@@ -439,7 +436,7 @@ data class ObjectFieldReadExpression(
     }
 
     override fun evaluate(scope: DynamicScope): Value {
-        val objectValue = objectExpression.evaluate(scope = scope).untag().asObjectValue(
+        val objectValue = objectExpression.evaluate(scope = scope).asObjectValue(
             message = "Only objects can have fields read",
         )
 
@@ -490,6 +487,20 @@ data class TagExpression(
         taggedValue = expression.evaluate(scope = scope),
         tag = attachedTagName,
     )
+}
+
+data class UntagExpression(
+    val expression: Expression,
+) : Expression {
+    private val expressionUnionType by lazy {
+        expression.type as? NarrowUnionType
+            ?: throw TypeCheckError("Tried to untag an expression of non-narrow-union type")
+    }
+
+    override val type: Type by lazy { expressionUnionType.narrowedType }
+
+    override fun evaluate(scope: DynamicScope): Value =
+        expression.evaluate(scope = scope).asTaggedValue().taggedValue
 }
 
 private fun evaluateNumberBinaryExpression(

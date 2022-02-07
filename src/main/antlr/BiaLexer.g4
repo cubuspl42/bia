@@ -14,6 +14,7 @@ External                : 'external' ;
 Typealias               : 'typealias' ;
 Union                   : 'union' ;
 Is                      : 'is' ;
+Untag                   : 'untag' ;
 
 // Built-in types / type constructors
 NumberType              : 'Number' ;

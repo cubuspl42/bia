@@ -6,8 +6,6 @@ import java.math.BigInteger
 
 sealed interface Value {
     val value: Any
-
-    fun untag(): Value = this
 }
 
 data class NumberValue(
@@ -80,8 +78,6 @@ data class TaggedValue(
 ) : Value {
     override val value: Any
         get() = this
-
-    override fun untag(): Value = taggedValue
 }
 
 fun Value.asNumberValue(message: String = "Expected a number, got"): NumberValue =

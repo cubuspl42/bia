@@ -8,9 +8,6 @@ sealed interface Type {
     fun isAssignableDirectlyTo(other: Type): Boolean = false
 
     fun resolveTypeVariables(mapping: TypeVariableMapping): Type
-
-    val narrowedType: Type
-        get() = this
 }
 
 data class TypeVariableMapping(
@@ -162,7 +159,8 @@ data class NarrowUnionType(
     override fun toPrettyString(): String =
         "${alternatives.joinToString(separator = " | ") { it.tagName }} [narrowed to ${narrowedAlternative.tagName}]"
 
-    override val narrowedType = narrowedAlternative.type
+    val narrowedType: Type
+        get() = narrowedAlternative.type
 }
 
 data class TaggedType(
