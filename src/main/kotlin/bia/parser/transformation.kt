@@ -25,6 +25,8 @@ import bia.model.IsExpression
 import bia.model.LambdaExpression
 import bia.model.LessThenExpression
 import bia.model.ListType
+import bia.model.MatchBranch
+import bia.model.MatchExpression
 import bia.model.MultiplicationExpression
 import bia.model.NarrowUnionType
 import bia.model.NotExpression
@@ -572,6 +574,30 @@ fun transformExpression(
             scope = scope,
             expression = ctx.expression(),
         )
+    )
+
+    override fun visitMatchExpression(
+        ctx: BiaParser.MatchExpressionContext,
+    ): Expression = MatchExpression(
+        matchee = transformExpression(
+            scope = scope,
+            expression = ctx.matchee,
+        ),
+        taggedBranches = ctx.matchTaggedBranch().map {
+            MatchBranch(
+                requiredTagName = it.tagName.text,
+                branch = transformExpression(
+                    scope = scope,
+                    expression = it.branch,
+                ),
+            )
+        },
+        elseBranch = ctx.matchElseBranch()?.let {
+            transformExpression(
+                scope = scope,
+                expression = it,
+            )
+        },
     )
 }.visit(expression)
 

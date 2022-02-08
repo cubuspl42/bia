@@ -58,6 +58,7 @@ callableExpression
     : LeftParen expression RightParen # parenExpression
     | callee=callableExpression callTypeVariableList? LeftParen callArgumentList RightParen # callExpression
     | referredName=Identifier # referenceExpression
+    | matchExpression # matchExpressionAlt
     ;
 
 objectLiteral
@@ -65,6 +66,15 @@ objectLiteral
 
 objectLiteralEntry
     : assignedFieldName=Identifier Assign initializer=expression ;
+
+matchExpression
+    : Match matchee=expression LeftBrace matchTaggedBranch+ matchElseBranch? RightBrace ;
+
+matchTaggedBranch
+    : Case tagName=Identifier FatArrow branch=expression ;
+
+matchElseBranch
+    : Else FatArrow branch=expression ;
 
 typeConstructor : ListTypeConstructor # listConstructor
                 | SequenceTypeConstructor # sequenceConstructor ;

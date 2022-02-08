@@ -2,6 +2,8 @@ package bia.parser
 
 import bia.model.CallExpression
 import bia.model.LessThenExpression
+import bia.model.MatchBranch
+import bia.model.MatchExpression
 import bia.model.ReferenceExpression
 import bia.model.TagExpression
 import bia.model.TypeVariable
@@ -117,6 +119,48 @@ internal class ParsingExpressionsTest {
             actual = parseExpression(
                 scopeTypeVariables = listOf(),
                 source = "untag foo",
+            ),
+        )
+    }
+
+    @Test
+    fun parseMatch() {
+        assertEquals(
+            expected = MatchExpression(
+                matchee = ReferenceExpression(
+                    referredName = "expr",
+                    referredDeclaration = null,
+                ),
+                taggedBranches = listOf(
+                    MatchBranch(
+                        requiredTagName = "Foo",
+                        branch = ReferenceExpression(
+                            referredName = "foo",
+                            referredDeclaration = null,
+                        ),
+                    ),
+                    MatchBranch(
+                        requiredTagName = "Bar",
+                        branch = ReferenceExpression(
+                            referredName = "bar",
+                            referredDeclaration = null,
+                        ),
+                    ),
+                ),
+                elseBranch = ReferenceExpression(
+                    referredName = "baz",
+                    referredDeclaration = null,
+                ),
+            ),
+            actual = parseExpression(
+                scopeTypeVariables = listOf(),
+                source = """
+                    match expr {
+                        case Foo => foo
+                        case Bar => bar
+                        else => baz
+                    }
+                """.trimIndent(),
             ),
         )
     }

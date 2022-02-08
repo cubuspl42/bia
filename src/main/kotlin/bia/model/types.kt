@@ -138,6 +138,8 @@ data class UnionAlternative(
 sealed class UnionType : SpecificType {
     abstract val alternatives: Set<UnionAlternative>
 
+    val tagNames: Set<String> by lazy { alternatives.map { it.tagName }.toSet() }
+
     override fun toPrettyString(): String =
         alternatives.joinToString(separator = " | ") { it.tagName }
 

@@ -15,6 +15,8 @@ Typealias               : 'typealias' ;
 Union                   : 'union' ;
 Is                      : 'is' ;
 Untag                   : 'untag' ;
+Match                   : 'match' ;
+Case                    : 'case' ;
 
 // Built-in types / type constructors
 NumberType              : 'Number' ;

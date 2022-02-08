@@ -5,6 +5,8 @@ import bia.model.BooleanType
 import bia.model.IfExpression
 import bia.model.IntLiteralExpression
 import bia.model.IsExpression
+import bia.model.MatchBranch
+import bia.model.MatchExpression
 import bia.model.NarrowUnionType
 import bia.model.NumberType
 import bia.model.ObjectFieldReadExpression
@@ -12,8 +14,10 @@ import bia.model.ObjectType
 import bia.model.ReferenceExpression
 import bia.model.SmartCastDeclaration
 import bia.model.TaggedType
+import bia.model.Type
 import bia.model.UnionAlternative
 import bia.model.UntagExpression
+import bia.model.ValueDeclaration
 import bia.model.WideUnionType
 import bia.model.isAssignableTo
 import bia.parser.ClosedDeclaration
@@ -155,33 +159,80 @@ internal class TypeCheckingTest {
     }
 
     @Test
-    fun testUntag() {
-//        assertEquals(
-//            expected = NumberType,
-//            actual = IfExpression(
-//                guard = TagExpression(
-//                    expression = BooleanLiteralExpression(true),
-//                    attachedTagName = "Tag1",
-//                ),
-//                trueBranch = IntLiteralExpression(1),
-//                falseBranch = IntLiteralExpression(0),
-//            ).type,
-//        )
+    fun testMatch() {
+        val objectType1 = ObjectType(
+            entries = mapOf(
+                "field1" to NumberType,
+            ),
+        )
 
-//        assertEquals(
-//            expected = NumberType,
-//            actual = ObjectFieldReadExpression(
-//                obj= ReferenceExpression(
-//                  referredName = "obj",
-//                  referredDeclaration = ArgumentDeclaration(
-//                      givenName = "obj",
-//                      valueType = ObjectType(
-//
-//                      )
-//                  )
-//                ),
-//            ).type,
-//        )
+        val objectType2 = ObjectType(
+            entries = mapOf(
+                "field2" to NumberType,
+            ),
+        )
 
+        val unionType = WideUnionType(
+            alternatives = setOf(
+                UnionAlternative(
+                    tagName = "Foo",
+                    type = objectType1,
+                ),
+                UnionAlternative(
+                    tagName = "Bar",
+                    type = BooleanType,
+                )
+            )
+        )
+
+        assertEquals(
+            expected = NumberType,
+            actual = MatchExpression(
+                matchee = argumentReference(
+                    referredName = "arg",
+                    valueType = unionType,
+                ),
+                taggedBranches = listOf(
+                    MatchBranch(
+                        requiredTagName = "Foo",
+                        branch = ObjectFieldReadExpression(
+                            objectExpression = UntagExpression(
+                                expression = argumentReference(
+                                    referredName = "foo",
+                                    valueType = objectType1,
+                                ),
+                            ),
+                            readFieldName = "field1",
+                        ),
+                    ),
+                    MatchBranch(
+                        requiredTagName = "Bar",
+                        branch = ObjectFieldReadExpression(
+                            objectExpression = UntagExpression(
+                                expression = argumentReference(
+                                    referredName = "bar",
+                                    valueType = objectType2,
+                                ),
+                            ),
+                            readFieldName = "field2",
+                        ),
+                    ),
+                ),
+                elseBranch = null,
+            ).type,
+        )
     }
 }
+
+private fun argumentReference(
+    referredName: String,
+    valueType: Type,
+) = ReferenceExpression(
+    referredName = referredName,
+    referredDeclaration = ClosedDeclaration(
+        declaration = ArgumentDeclaration(
+            givenName = referredName,
+            valueType = valueType,
+        ),
+    ),
+)

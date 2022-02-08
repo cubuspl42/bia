@@ -242,6 +242,7 @@ data class ReferenceExpression(
     val referredName: String,
     val referredDeclaration: ScopedDeclaration?,
 ) : Expression {
+
     override val type: Type by lazy {
         val referredDeclaration =
             this.referredDeclaration ?: throw TypeCheckError("Unresolved reference ($referredName) has no type")
@@ -501,6 +502,38 @@ data class UntagExpression(
 
     override fun evaluate(scope: DynamicScope): Value =
         expression.evaluate(scope = scope).asTaggedValue().taggedValue
+}
+
+data class MatchBranch(
+    val requiredTagName: String,
+    val branch: Expression,
+)
+
+data class MatchExpression(
+    val matchee: Expression,
+    val taggedBranches: List<MatchBranch>,
+    val elseBranch: Expression?,
+) : Expression {
+    private val allBranches: List<Expression> =
+        taggedBranches.map { it.branch } + listOfNotNull(elseBranch)
+
+    private val matcheeUnionType: UnionType by lazy {
+        matchee.type as? UnionType
+            ?: throw TypeCheckError("Tried to match an expression of non-union type")
+    }
+
+    override val type: Type by lazy {
+        val firstBranch = allBranches.first()
+
+        if (allBranches.any { it.type != firstBranch.type }) {
+            throw TypeCheckError("Not all branches of a match expression have same types")
+        }
+
+        firstBranch.type
+    }
+
+    override fun evaluate(scope: DynamicScope): Value =
+        TODO()
 }
 
 private fun evaluateNumberBinaryExpression(
