@@ -1,7 +1,7 @@
 package bia.test_utils
 
 import bia.model.ValueDeclaration
-import bia.model.Expression
+import bia.model.expressions.Expression
 import bia.model.TypeVariable
 import bia.parser.ClosedDeclaration
 import bia.parser.StaticScope

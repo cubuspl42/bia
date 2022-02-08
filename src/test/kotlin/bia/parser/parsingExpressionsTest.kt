@@ -1,13 +1,13 @@
 package bia.parser
 
-import bia.model.CallExpression
-import bia.model.LessThenExpression
-import bia.model.MatchBranch
-import bia.model.MatchExpression
-import bia.model.ReferenceExpression
-import bia.model.TagExpression
+import bia.model.expressions.CallExpression
+import bia.model.expressions.LessThenExpression
+import bia.model.expressions.MatchBranch
+import bia.model.expressions.MatchExpression
+import bia.model.expressions.ReferenceExpression
+import bia.model.expressions.TagExpression
 import bia.model.TypeVariable
-import bia.model.UntagExpression
+import bia.model.expressions.UntagExpression
 import bia.test_utils.parseExpression
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals

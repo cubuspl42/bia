@@ -2,6 +2,12 @@ package bia.model
 
 import bia.interpreter.DynamicScope
 import bia.interpreter.executeValueDeclaration
+import bia.model.expressions.BooleanLiteralExpression
+import bia.model.expressions.IntLiteralExpression
+import bia.model.expressions.IsExpression
+import bia.model.expressions.ObjectFieldReadExpression
+import bia.model.expressions.ObjectLiteralExpression
+import bia.model.expressions.ReferenceExpression
 import bia.parser.ClosedDeclaration
 import bia.test_utils.parseExpression
 import org.junit.jupiter.api.Test

@@ -1,8 +1,7 @@
 package bia.interpreter
 
 import bia.model.BasicArgumentListDeclaration
-import bia.model.ValueDeclaration
-import bia.model.Expression
+import bia.model.expressions.Expression
 import bia.model.FunctionBody
 import bia.model.DefDeclaration
 import bia.model.DefinedFunctionValue

@@ -1,5 +1,6 @@
 package bia.model
 
+import bia.model.expressions.Expression
 import bia.type_checker.TypeCheckError
 
 sealed interface TopLevelDeclaration {

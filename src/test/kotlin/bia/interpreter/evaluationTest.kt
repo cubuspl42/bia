@@ -1,9 +1,9 @@
 package bia.interpreter
 
-import bia.model.IntLiteralExpression
+import bia.model.expressions.IntLiteralExpression
 import bia.model.NumberValue
-import bia.model.TagExpression
-import bia.model.UntagExpression
+import bia.model.expressions.TagExpression
+import bia.model.expressions.UntagExpression
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
