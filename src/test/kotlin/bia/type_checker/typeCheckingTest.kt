@@ -26,6 +26,11 @@ import bia.model.TypeReference
 import bia.model.TypeVariable
 import bia.model.TypeVariableB
 import bia.model.UnionAlternative
+import bia.model.ValDeclaration
+import bia.model.ValDeclarationB
+import bia.model.Value
+import bia.model.ValueDefinition
+import bia.model.ValueDefinitionB
 import bia.model.expressions.UntagExpression
 import bia.model.WideUnionType
 import bia.model.expressions.BooleanLiteralExpression
@@ -461,6 +466,46 @@ internal class TypeCheckingTest {
                 returnType = typeVariable,
             ),
             actual = lambdaExpression.type,
+        )
+    }
+
+    @Test
+    fun testFunctionBodyReferences() {
+        val functionBody = FunctionBodyB(
+            definitions = listOf(
+                ValDeclarationB(
+                    givenName = "a",
+                    initializer = IntLiteralExpression(value = 10),
+                ),
+                ValDeclarationB(
+                    givenName = "b",
+                    initializer = ReferenceExpressionB(referredName = "a"),
+                ),
+            ),
+            returned = ReferenceExpressionB(referredName = "b"),
+        ).build(
+            scope = StaticScope.empty,
+        )
+
+        functionBody.validate()
+
+        val aDef = functionBody.definitions.single { it.givenName == "a" }
+
+        assertEquals(
+            expected = NumberType,
+            actual = aDef.valueType,
+        )
+
+        val bDef = functionBody.definitions.single { it.givenName == "b" }
+
+        assertEquals(
+            expected = NumberType,
+            actual = bDef.valueType,
+        )
+
+        assertEquals(
+            expected = NumberType,
+            actual = functionBody.returned.type,
         )
     }
 }

@@ -288,13 +288,20 @@ data class FunctionBodyB(
     val definitions: List<ValueDefinitionB>,
     val returned: ExpressionB,
 ) {
-    fun build(scope: StaticScope): FunctionBody = FunctionBody(
-        definitions = buildValueDefinitions(
+    @Suppress("NAME_SHADOWING")
+    fun build(scope: StaticScope): FunctionBody {
+        val builtValueDefinitions = buildValueDefinitions(
             scope = scope,
             definitions = definitions,
-        ).definitions,
-        returned = returned.build(scope = scope),
-    )
+        )
+
+        val scope = builtValueDefinitions.extendedScope
+
+        return FunctionBody(
+            definitions = builtValueDefinitions.definitions,
+            returned = returned.build(scope = scope),
+        )
+    }
 }
 
 data class BuiltValueDefinitions(
