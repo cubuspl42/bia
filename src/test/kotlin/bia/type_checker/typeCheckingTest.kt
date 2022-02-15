@@ -181,7 +181,6 @@ internal class TypeCheckingTest {
     }
 
     @Test
-    @Disabled // TODO: Make this pass
     fun testMatchMissingElseBranch() {
         val unionType = WideUnionType(
             alternatives = setOf(
@@ -192,8 +191,8 @@ internal class TypeCheckingTest {
                 UnionAlternative(
                     tagName = "Bar",
                     type = BooleanType,
-                )
-            )
+                ),
+            ),
         )
 
         assertThrows<TypeCheckError> {
@@ -225,8 +224,7 @@ internal class TypeCheckingTest {
     }
 
     @Test
-    @Disabled // TODO: Make this pass
-    fun testMatchNonExistingTag() {
+    fun testMatchWrongTag() {
         val unionType = WideUnionType(
             alternatives = setOf(
                 UnionAlternative(
@@ -248,11 +246,15 @@ internal class TypeCheckingTest {
                 taggedBranches = listOf(
                     MatchBranchB(
                         requiredTagName = "Foo",
-                        branch = IntLiteralExpression(value = 0),
+                        branch = IntLiteralExpression(value = 10),
+                    ),
+                    MatchBranchB(
+                        requiredTagName = "Bar",
+                        branch = IntLiteralExpression(value = 20),
                     ),
                     MatchBranchB(
                         requiredTagName = "Baz",
-                        branch = IntLiteralExpression(value = 1),
+                        branch = IntLiteralExpression(value = 30),
                     ),
                 ),
                 elseBranch = null,

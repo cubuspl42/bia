@@ -108,6 +108,28 @@ data class MatchExpression(
         firstBranch.type
     }
 
+    override fun validate() {
+        type
+
+        val unionTags = matcheeUnionType.tagNames
+
+        val checkedTags = taggedBranches.map { it.requiredTagName }.toSet()
+
+        val nonCheckedTags = unionTags - checkedTags
+
+        if (nonCheckedTags.isNotEmpty()) {
+            if (elseBranch == null) {
+                throw TypeCheckError("Not all tags are checked by match expression and it has no else branch. Non-checked tags: $nonCheckedTags")
+            }
+        }
+
+        val wrongTags = checkedTags - unionTags
+
+        if (wrongTags.isNotEmpty()) {
+            throw TypeCheckError("Not all tags are checked by match expression are declared by the matchee's union type. Wrong tags: $wrongTags")
+        }
+    }
+
     override fun evaluate(scope: DynamicScope): Value {
         val matchee = matchee.evaluate(scope = scope).asTaggedValue()
 
