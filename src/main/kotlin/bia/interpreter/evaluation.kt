@@ -26,7 +26,7 @@ fun evaluateBody(
     outerScope: DynamicScope,
     body: FunctionBody,
 ): Value {
-    val finalScope = body.declarations.fold(outerScope) { scope, declaration ->
+    val finalScope = body.definitions.fold(outerScope) { scope, declaration ->
         executeDeclaration(scope = scope, declaration = declaration)
     }
 

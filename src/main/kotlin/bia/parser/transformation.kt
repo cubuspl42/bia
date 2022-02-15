@@ -1,60 +1,56 @@
 package bia.parser
 
-import bia.model.expressions.AdditionExpression
-import bia.model.expressions.AndExpression
-import bia.model.ArgumentDeclaration
-import bia.model.ArgumentListDeclaration
-import bia.model.BasicArgumentListDeclaration
+import bia.model.ArgumentDeclarationB
+import bia.model.ArgumentListDeclarationB
+import bia.model.BasicArgumentListDeclarationB
 import bia.model.BigIntegerType
-import bia.model.ValueDeclaration
-import bia.model.expressions.BooleanLiteralExpression
 import bia.model.BooleanType
-import bia.model.expressions.CallExpression
-import bia.model.expressions.DivisionExpression
-import bia.model.expressions.EqualsExpression
-import bia.model.expressions.Expression
-import bia.model.FunctionBody
-import bia.model.DefDeclaration
-import bia.model.FunctionDefinition
-import bia.model.FunctionType
-import bia.model.expressions.GreaterThenExpression
-import bia.model.expressions.IfExpression
-import bia.model.expressions.IntLiteralExpression
-import bia.model.expressions.IntegerDivisionExpression
-import bia.model.expressions.IsExpression
-import bia.model.expressions.LambdaExpression
-import bia.model.expressions.LessThenExpression
-import bia.model.ListType
-import bia.model.expressions.MatchBranch
-import bia.model.expressions.MatchExpression
-import bia.model.expressions.MultiplicationExpression
-import bia.model.NarrowUnionType
-import bia.model.expressions.NotExpression
-import bia.model.NullableType
+import bia.model.DefDeclarationB
+import bia.model.FunctionBodyB
+import bia.model.FunctionTypeB
+import bia.model.ListTypeB
+import bia.model.NullableTypeB
 import bia.model.NumberType
-import bia.model.expressions.ObjectFieldReadExpression
-import bia.model.expressions.ObjectLiteralExpression
-import bia.model.ObjectType
-import bia.model.expressions.OrExpression
-import bia.model.Program
-import bia.model.expressions.ReferenceExpression
-import bia.model.expressions.ReminderExpression
-import bia.model.SequenceType
-import bia.model.SmartCastDeclaration
-import bia.model.expressions.SubtractionExpression
-import bia.model.expressions.TagExpression
-import bia.model.TopLevelDeclaration
+import bia.model.ObjectTypeB
+import bia.model.ProgramB
+import bia.model.SequenceTypeB
+import bia.model.TopLevelDeclarationB
 import bia.model.Type
-import bia.model.TypeAliasDeclaration
-import bia.model.TypeVariable
-import bia.model.UnionAlternative
-import bia.model.UnionDeclaration
-import bia.model.UnionType
-import bia.model.expressions.UntagExpression
-import bia.model.ValDeclaration
+import bia.model.TypeAliasDeclarationB
+import bia.model.TypeExpression
+import bia.model.TypeVariableB
+import bia.model.UnionAlternativeB
+import bia.model.UnionDeclarationB
+import bia.model.ValDeclarationB
 import bia.model.ValueDefinition
-import bia.model.VarargArgumentListDeclaration
-import bia.model.WideUnionType
+import bia.model.ValueDefinitionB
+import bia.model.VarargArgumentListDeclarationB
+import bia.model.expressions.AdditionExpressionB
+import bia.model.expressions.AndExpressionB
+import bia.model.expressions.BooleanLiteralExpression
+import bia.model.expressions.CallExpressionB
+import bia.model.expressions.DivisionExpressionB
+import bia.model.expressions.EqualsExpressionB
+import bia.model.expressions.ExpressionB
+import bia.model.expressions.GreaterThenExpressionB
+import bia.model.expressions.IfExpressionB
+import bia.model.expressions.IntLiteralExpression
+import bia.model.expressions.IntegerDivisionExpressionB
+import bia.model.expressions.IsExpressionB
+import bia.model.expressions.LambdaExpressionB
+import bia.model.expressions.LessThenExpressionB
+import bia.model.expressions.MatchBranchB
+import bia.model.expressions.MatchExpressionB
+import bia.model.expressions.MultiplicationExpressionB
+import bia.model.expressions.NotExpressionB
+import bia.model.expressions.ObjectFieldReadExpressionB
+import bia.model.expressions.ObjectLiteralExpressionB
+import bia.model.expressions.OrExpressionB
+import bia.model.expressions.ReferenceExpressionB
+import bia.model.expressions.ReminderExpressionB
+import bia.model.expressions.SubtractionExpressionB
+import bia.model.expressions.TagExpressionB
+import bia.model.expressions.UntagExpressionB
 import bia.parser.antlr.BiaLexer
 import bia.parser.antlr.BiaParser
 import bia.parser.antlr.BiaParserBaseVisitor
@@ -62,235 +58,125 @@ import bia.type_checker.TypeCheckError
 import org.antlr.v4.runtime.ParserRuleContext
 
 fun transformProgram(
-    outerScope: StaticScope,
     parser: BiaParser,
-): Program = Program(
-    topLevelDeclarations = transformTopLevelDeclarations(
-        scope = outerScope,
-        inputDeclarations = parser.program().topLevelDeclaration(),
-    ),
+): ProgramB = ProgramB(
+    topLevelDeclarations = parser.program().topLevelDeclaration().map {
+        transformTopLevelDeclaration(topLevelDeclaration = it)
+    }
 )
 
-fun transformTopLevelDeclarations(
-    scope: StaticScope,
-    inputDeclarations: List<BiaParser.TopLevelDeclarationContext>,
-): List<TopLevelDeclaration> = inputDeclarations.firstOrNull()?.let {
-    val topLevelDeclaration = transformTopLevelDeclaration(
-        scope = scope,
-        topLevelDeclaration = it,
-    )
-
-    val newScope = when (topLevelDeclaration) {
-        is ValueDeclaration -> scope.extendClosed(
-            name = topLevelDeclaration.givenName,
-            declaration = topLevelDeclaration,
-        )
-        is TypeAliasDeclaration -> scope.extendType(
-            name = topLevelDeclaration.aliasName,
-            type = topLevelDeclaration.aliasedType,
-        )
-        is UnionDeclaration -> scope.extendType(
-            name = topLevelDeclaration.unionName,
-            type = topLevelDeclaration.unionType,
-        )
-    }
-
-    listOf(topLevelDeclaration) + transformTopLevelDeclarations(
-        scope = newScope,
-        inputDeclarations = inputDeclarations.drop(1),
-    )
-} ?: emptyList()
-
 private fun transformTopLevelDeclaration(
-    scope: StaticScope,
     topLevelDeclaration: BiaParser.TopLevelDeclarationContext,
-): TopLevelDeclaration = object : BiaParserBaseVisitor<TopLevelDeclaration>() {
-    override fun visitDeclaration(ctx: BiaParser.DeclarationContext): TopLevelDeclaration =
-        transformValueDeclaration(
-            scope = scope,
+): TopLevelDeclarationB = object : BiaParserBaseVisitor<TopLevelDeclarationB>() {
+    override fun visitDeclaration(ctx: BiaParser.DeclarationContext): TopLevelDeclarationB =
+        transformValueDefinition(
             declaration = ctx,
         )
 
     override fun visitTypeAlias(ctx: BiaParser.TypeAliasContext) =
-        TypeAliasDeclaration(
+        TypeAliasDeclarationB(
             aliasName = ctx.aliasName.text,
             aliasedType = transformTypeExpression(
-                scope = scope,
                 typeExpression = ctx.aliasedType,
             )
         )
 
     override fun visitUnionDeclaration(
         ctx: BiaParser.UnionDeclarationContext,
-    ): TopLevelDeclaration = UnionDeclaration(
+    ): TopLevelDeclarationB = UnionDeclarationB(
         unionName = ctx.givenName.text,
-        unionType = WideUnionType(
-            alternatives = ctx.unionEntryDeclaration().map {
-                UnionAlternative(
-                    tagName = it.typeReference().text,
-                    type = transformTypeReference(
-                        scope = scope,
-                        typeReference = it.typeReference(),
-                    ),
-                )
-            }.toSet()
-        ),
+        alternatives = ctx.unionEntryDeclaration().map {
+            UnionAlternativeB(
+                tagName = it.typeReference().text,
+                type = transformTypeReference(
+                    typeReference = it.typeReference(),
+                ),
+            )
+        },
     )
 }.visit(topLevelDeclaration)
 
 fun transformBody(
-    outerScope: StaticScope,
     body: BiaParser.BodyContext,
-): FunctionBody {
+): FunctionBodyB {
     val result = transformDeclarations(
-        scope = outerScope,
         inputDeclarations = body.declarationList().declaration(),
-        outputDeclarations = emptyList(),
     )
 
     val returned = transformExpression(
-        scope = result.finalScope,
         expression = body.return_().expression(),
     )
 
-    return FunctionBody(
-        declarations = result.declarations,
+    return FunctionBodyB(
+        definitions = result,
         returned = returned,
     )
 }
-
-fun transformFunction(
-    outerScope: StaticScope,
-    body: BiaParser.BodyContext,
-): FunctionBody {
-    val result = transformDeclarations(
-        scope = outerScope,
-        inputDeclarations = body.declarationList().declaration(),
-        outputDeclarations = emptyList(),
-    )
-
-    val returned = transformExpression(
-        scope = result.finalScope,
-        expression = body.return_().expression(),
-    )
-
-    return FunctionBody(
-        declarations = result.declarations,
-        returned = returned,
-    )
-}
-
-data class TransformDeclarationsResult(
-    val finalScope: StaticScope,
-    val declarations: List<ValueDefinition>,
-)
 
 fun transformDeclarations(
-    scope: StaticScope,
     inputDeclarations: List<BiaParser.DeclarationContext>,
-    outputDeclarations: List<ValueDefinition>,
-): TransformDeclarationsResult = inputDeclarations.firstOrNull()?.let {
-    val declaration = transformValueDeclaration(
-        scope = scope,
-        declaration = it,
-    )
+): List<ValueDefinitionB> = inputDeclarations.map {
+    transformValueDefinition(declaration = it)
+}
 
-    transformDeclarations(
-        scope = scope.extendClosed(
-            name = declaration.givenName,
-            declaration = declaration,
-        ),
-        inputDeclarations = inputDeclarations.drop(1),
-        outputDeclarations = outputDeclarations + declaration,
-    )
-} ?: TransformDeclarationsResult(
-    finalScope = scope,
-    declarations = outputDeclarations,
-)
-
-fun transformValueDeclaration(
-    scope: StaticScope,
+fun transformValueDefinition(
     declaration: BiaParser.DeclarationContext,
-): ValueDefinition = object : BiaParserBaseVisitor<ValueDefinition>() {
+): ValueDefinitionB = object : BiaParserBaseVisitor<ValueDefinitionB>() {
     override fun visitValueDeclaration(
         ctx: BiaParser.ValueDeclarationContext,
-    ) = ValDeclaration(
+    ) = ValDeclarationB(
         givenName = ctx.name.text,
         initializer = transformExpression(
-            scope = scope,
             expression = ctx.initializer,
         ),
     )
 
     override fun visitFunctionDeclaration(
         ctx: BiaParser.FunctionDeclarationContext,
-    ): ValueDefinition {
+    ): ValueDefinitionB {
         val functionGivenName = ctx.name.text
 
         val isExternal = ctx.External() != null
 
-        val (typeVariables, scopeWithTypeVariables) = transformTypeVariableDeclarations(
-            scope = scope,
+        val typeVariables = transformTypeVariableDeclarations(
             genericArgumentDeclarationList = ctx.genericArgumentListDeclaration(),
         )
 
         val argumentListDeclaration = transformArgumentListDeclarations(
-            scope = scopeWithTypeVariables,
             argumentListDeclaration = ctx.argumentListDeclaration(),
         )
 
         val explicitReturnType = ctx.explicitReturnType?.let {
             transformTypeExpression(
-                scope = scopeWithTypeVariables,
                 typeExpression = it,
             )
         }
 
         val bodyOrNull: BiaParser.BodyContext? = ctx.body()
 
-        fun transformDefinedFunction(): DefDeclaration {
+        fun transformDefinedFunction(): DefDeclarationB {
             val body = bodyOrNull ?: throw TypeCheckError("Non-external function needs to have a body")
 
-            return object {
-                val functionDeclaration: DefDeclaration by lazy {
-                    DefDeclaration(
-                        givenName = functionGivenName,
-                        typeVariables = typeVariables,
-                        argumentListDeclaration = argumentListDeclaration,
-                        explicitReturnType = explicitReturnType,
-                        buildDefinition = {
-                            FunctionDefinition(
-                                body = transformBody(
-                                    outerScope = argumentListDeclaration.extendScope(
-                                        scope = scopeWithTypeVariables.extendOpen(
-                                            name = functionGivenName,
-                                            declaration = functionDeclaration,
-                                        ),
-                                    ),
-                                    body = body,
-                                ),
-                            )
-                        }
-                    )
-                }
-
-                init {
-                    functionDeclaration.definition
-                }
-            }.functionDeclaration
+            return DefDeclarationB(
+                givenName = functionGivenName,
+                typeVariables = typeVariables,
+                argumentListDeclaration = argumentListDeclaration,
+                explicitReturnType = explicitReturnType,
+                body = transformBody(body = body),
+            )
         }
 
-        fun transformExternalFunction(): DefDeclaration {
+        fun transformExternalFunction(): DefDeclarationB {
             if (bodyOrNull != null) throw TypeCheckError("External functions cannot have a body")
 
             if (explicitReturnType == null) throw TypeCheckError("External functions needs an explicit return type")
 
-            return DefDeclaration(
+            return DefDeclarationB(
                 givenName = ctx.name.text,
                 typeVariables = typeVariables,
                 argumentListDeclaration = argumentListDeclaration,
                 explicitReturnType = explicitReturnType,
-                buildDefinition = { null },
+                body = null,
             )
         }
 
@@ -299,60 +185,28 @@ fun transformValueDeclaration(
     }
 }.visit(declaration)
 
-data class TransformTypeVariableDeclarationsResult(
-    val typeVariables: List<TypeVariable>,
-    val newScope: StaticScope,
-)
-
 fun transformTypeVariableDeclarations(
-    scope: StaticScope,
     genericArgumentDeclarationList: BiaParser.GenericArgumentListDeclarationContext?,
-): TransformTypeVariableDeclarationsResult {
+): List<TypeVariableB> {
     val genericArgumentDeclarations = genericArgumentDeclarationList?.generitArgumentDeclaration() ?: emptyList()
 
-    fun transformRecursively(
-        baseResult: TransformTypeVariableDeclarationsResult,
-        genericArgumentDeclarations: List<BiaParser.GeneritArgumentDeclarationContext>,
-    ): TransformTypeVariableDeclarationsResult {
-        if (genericArgumentDeclarations.isEmpty()) return baseResult
-
-        val head = genericArgumentDeclarations.first()
-        val tail = genericArgumentDeclarations.drop(1)
-
-        val givenName = head.name.text
-
-        val allocationResult = baseResult.newScope.allocateTypeVariable(givenName = givenName)
-
-        return transformRecursively(
-            baseResult = TransformTypeVariableDeclarationsResult(
-                typeVariables = baseResult.typeVariables + allocationResult.allocatedVariable,
-                newScope = allocationResult.newScope,
-            ),
-            genericArgumentDeclarations = tail,
+    return genericArgumentDeclarations.map {
+        TypeVariableB(
+            givenName = it.name.text,
         )
     }
-
-    return transformRecursively(
-        baseResult = TransformTypeVariableDeclarationsResult(
-            typeVariables = emptyList(),
-            newScope = scope,
-        ),
-        genericArgumentDeclarations = genericArgumentDeclarations,
-    )
 }
 
 fun transformArgumentListDeclarations(
-    scope: StaticScope,
     argumentListDeclaration: BiaParser.ArgumentListDeclarationContext,
-): ArgumentListDeclaration = object : BiaParserBaseVisitor<ArgumentListDeclaration>() {
+): ArgumentListDeclarationB = object : BiaParserBaseVisitor<ArgumentListDeclarationB>() {
     override fun visitBasicArgumentListDeclaration(
         ctx: BiaParser.BasicArgumentListDeclarationContext,
-    ): ArgumentListDeclaration = BasicArgumentListDeclaration(
+    ) = BasicArgumentListDeclarationB(
         argumentDeclarations = ctx.argumentDeclaration().map {
-            ArgumentDeclaration(
+            ArgumentDeclarationB(
                 givenName = it.name.text,
                 valueType = transformTypeExpression(
-                    scope = scope,
                     typeExpression = it.typeExpression(),
                 ),
             )
@@ -361,176 +215,153 @@ fun transformArgumentListDeclarations(
 
     override fun visitVarargArgumentListDeclaration(
         ctx: BiaParser.VarargArgumentListDeclarationContext,
-    ): ArgumentListDeclaration = VarargArgumentListDeclaration(
+    ) = VarargArgumentListDeclarationB(
         givenName = ctx.givenName.text,
         type = transformTypeExpression(
-            scope = scope,
             typeExpression = ctx.typeExpression(),
         ),
     )
 }.visit(argumentListDeclaration)
 
 fun transformExpression(
-    scope: StaticScope,
     expression: ParserRuleContext,
-): Expression = object : BiaParserBaseVisitor<Expression>() {
-    override fun visitReferenceExpression(ctx: BiaParser.ReferenceExpressionContext): Expression =
+): ExpressionB = object : BiaParserBaseVisitor<ExpressionB>() {
+    override fun visitReferenceExpression(ctx: BiaParser.ReferenceExpressionContext) =
         transformReferenceExpression(
-            scope = scope,
             expression = ctx,
         )
 
-    override fun visitCallExpression(ctx: BiaParser.CallExpressionContext): Expression =
-        CallExpression(
+    override fun visitCallExpression(ctx: BiaParser.CallExpressionContext) =
+        CallExpressionB(
             callee = transformExpression(
-                scope = scope,
                 expression = ctx.callee,
             ),
             typeArguments = ctx.callTypeVariableList()?.typeExpression()?.map {
                 transformTypeExpression(
-                    scope = scope,
                     typeExpression = it,
                 )
             } ?: emptyList(),
             arguments = ctx.callArgumentList().expression().map {
                 transformExpression(
-                    scope = scope,
                     expression = it,
                 )
             },
         )
 
-    override fun visitEqualsOperation(ctx: BiaParser.EqualsOperationContext): Expression =
-        EqualsExpression(
+    override fun visitEqualsOperation(ctx: BiaParser.EqualsOperationContext): ExpressionB =
+        EqualsExpressionB(
             left = transformExpression(
-                scope = scope,
                 expression = ctx.left,
             ),
             right = transformExpression(
-                scope = scope,
                 expression = ctx.right,
             ),
         )
 
-    override fun visitIntLiteral(ctx: BiaParser.IntLiteralContext): Expression =
+    override fun visitIntLiteral(ctx: BiaParser.IntLiteralContext): ExpressionB =
         IntLiteralExpression(
             value = ctx.IntLiteral().text.toLong(radix = 10),
         )
 
-    override fun visitTrueLiteral(ctx: BiaParser.TrueLiteralContext?): Expression =
+    override fun visitTrueLiteral(ctx: BiaParser.TrueLiteralContext?): ExpressionB =
         BooleanLiteralExpression(
             value = true,
         )
 
-    override fun visitFalseLiteral(ctx: BiaParser.FalseLiteralContext?): Expression =
+    override fun visitFalseLiteral(ctx: BiaParser.FalseLiteralContext?): ExpressionB =
         BooleanLiteralExpression(
             value = false,
         )
 
     override fun visitObjectLiteral(ctx: BiaParser.ObjectLiteralContext) =
-        ObjectLiteralExpression(
+        ObjectLiteralExpressionB(
             entries = ctx.objectLiteralEntry().associate {
                 it.assignedFieldName.text to transformExpression(
-                    scope = scope,
                     expression = it.initializer,
                 )
             },
         )
 
-    override fun visitParenExpression(ctx: BiaParser.ParenExpressionContext): Expression =
+    override fun visitParenExpression(ctx: BiaParser.ParenExpressionContext): ExpressionB =
         transformExpression(
-            scope = scope,
             expression = ctx.expression(),
         )
 
-    override fun visitBinaryOperation(ctx: BiaParser.BinaryOperationContext): Expression {
+    override fun visitBinaryOperation(ctx: BiaParser.BinaryOperationContext): ExpressionB {
         val left = transformExpression(
-            scope = scope,
             expression = ctx.left,
         )
 
         val right = transformExpression(
-            scope = scope,
             expression = ctx.right,
         )
 
         val operator = ctx.operator
 
         return when (operator.type) {
-            BiaLexer.Plus -> AdditionExpression(left, right)
-            BiaLexer.Minus -> SubtractionExpression(left, right)
-            BiaLexer.Multiplication -> MultiplicationExpression(left, right)
-            BiaLexer.Division -> DivisionExpression(left, right)
-            BiaLexer.IntegerDivision -> IntegerDivisionExpression(left, right)
-            BiaLexer.Reminder -> ReminderExpression(left, right)
-            BiaLexer.Or -> OrExpression(left, right)
-            BiaLexer.And -> AndExpression(left, right)
-            BiaLexer.Lt -> LessThenExpression(left, right)
-            BiaLexer.Gt -> GreaterThenExpression(left, right)
+            BiaLexer.Plus -> AdditionExpressionB(left, right)
+            BiaLexer.Minus -> SubtractionExpressionB(left, right)
+            BiaLexer.Multiplication -> MultiplicationExpressionB(left, right)
+            BiaLexer.Division -> DivisionExpressionB(left, right)
+            BiaLexer.IntegerDivision -> IntegerDivisionExpressionB(left, right)
+            BiaLexer.Reminder -> ReminderExpressionB(left, right)
+            BiaLexer.Or -> OrExpressionB(left, right)
+            BiaLexer.And -> AndExpressionB(left, right)
+            BiaLexer.Lt -> LessThenExpressionB(left, right)
+            BiaLexer.Gt -> GreaterThenExpressionB(left, right)
             else -> throw UnsupportedOperationException("Unrecognized operator: ${operator.text}")
         }
     }
 
-    override fun visitUnaryOperation(ctx: BiaParser.UnaryOperationContext): Expression {
+    override fun visitUnaryOperation(ctx: BiaParser.UnaryOperationContext): ExpressionB {
         val argument = transformExpression(
-            scope = scope,
             expression = ctx.expression(),
         )
 
         val operator = ctx.operator
 
         return when (operator.type) {
-            BiaLexer.Not -> NotExpression(argument)
+            BiaLexer.Not -> NotExpressionB(argument)
             else -> throw UnsupportedOperationException("Unrecognized operator: ${operator.text}")
         }
     }
 
-    override fun visitIfExpression(ctx: BiaParser.IfExpressionContext): Expression {
+    override fun visitIfExpression(ctx: BiaParser.IfExpressionContext): ExpressionB {
         val guard = transformExpression(
-            scope = scope,
             expression = ctx.guard,
         )
 
-        return IfExpression(
+        return IfExpressionB(
             guard = guard,
             trueBranch = transformExpression(
-                scope = processGuardSmartCast(
-                    scope = scope,
-                    guard = guard,
-                ),
                 expression = ctx.trueBranch,
             ),
             falseBranch = transformExpression(
-                scope = scope,
                 expression = ctx.falseBranch,
             ),
         )
     }
 
-    override fun visitLambdaExpression(ctx: BiaParser.LambdaExpressionContext): Expression {
-        val (typeVariables, scopeWithTypeVariables) = transformTypeVariableDeclarations(
-            scope = scope,
+    override fun visitLambdaExpression(ctx: BiaParser.LambdaExpressionContext): ExpressionB {
+        val typeVariables = transformTypeVariableDeclarations(
             genericArgumentDeclarationList = ctx.genericArgumentListDeclaration(),
         )
 
         val argumentListDeclaration = transformArgumentListDeclarations(
-            scope = scopeWithTypeVariables,
             argumentListDeclaration = ctx.argumentListDeclaration(),
         )
 
         val explicitReturnType = ctx.explicitReturnType?.let {
             transformTypeExpression(
-                scope = scopeWithTypeVariables,
                 typeExpression = it,
             )
         }
 
         val body = transformBody(
-            outerScope = argumentListDeclaration.extendScope(scope = scopeWithTypeVariables),
             body = ctx.body(),
         )
 
-        return LambdaExpression(
+        return LambdaExpressionB(
             typeVariables = typeVariables,
             argumentListDeclaration = argumentListDeclaration,
             explicitReturnType = explicitReturnType,
@@ -539,9 +370,8 @@ fun transformExpression(
     }
 
     override fun visitObjectFieldRead(ctx: BiaParser.ObjectFieldReadContext) =
-        ObjectFieldReadExpression(
+        ObjectFieldReadExpressionB(
             objectExpression = transformExpression(
-                scope = scope,
                 expression = ctx.expression(),
             ),
             readFieldName = ctx.readFieldName.text,
@@ -549,9 +379,8 @@ fun transformExpression(
 
     override fun visitIsExpression(
         ctx: BiaParser.IsExpressionContext,
-    ): Expression = IsExpression(
-        expression = transformExpression(
-            scope = scope,
+    ): ExpressionB = IsExpressionB(
+        checkee = transformExpression(
             expression = ctx.expression(),
         ),
         checkedTagName = ctx.tagName.text,
@@ -559,9 +388,8 @@ fun transformExpression(
 
     override fun visitTagExpression(
         ctx: BiaParser.TagExpressionContext,
-    ): Expression = TagExpression(
-        expression = transformExpression(
-            scope = scope,
+    ): ExpressionB = TagExpressionB(
+        tagee = transformExpression(
             expression = ctx.expression(),
         ),
         attachedTagName = ctx.attachedTagName.text,
@@ -569,109 +397,66 @@ fun transformExpression(
 
     override fun visitUntagExpression(
         ctx: BiaParser.UntagExpressionContext,
-    ): Expression = UntagExpression(
-        expression = transformExpression(
-            scope = scope,
+    ): ExpressionB = UntagExpressionB(
+        untagee = transformExpression(
             expression = ctx.expression(),
         )
     )
 
     override fun visitMatchExpression(
         ctx: BiaParser.MatchExpressionContext,
-    ): Expression = MatchExpression(
+    ): ExpressionB = MatchExpressionB(
         matchee = transformExpression(
-            scope = scope,
             expression = ctx.matchee,
         ),
         taggedBranches = ctx.matchTaggedBranch().map {
-            MatchBranch(
+            MatchBranchB(
                 requiredTagName = it.tagName.text,
                 branch = transformExpression(
-                    scope = scope,
                     expression = it.branch,
                 ),
             )
         },
         elseBranch = ctx.matchElseBranch()?.let {
             transformExpression(
-                scope = scope,
                 expression = it,
             )
         },
     )
 }.visit(expression)
 
-private fun processGuardSmartCast(
-    scope: StaticScope,
-    guard: Expression,
-): StaticScope = if (guard is IsExpression) {
-    val isExpression = guard.expression
-
-    if (isExpression is ReferenceExpression) {
-        val referredDeclaration = isExpression.referredDeclaration
-
-        if (referredDeclaration != null) {
-            val declaration = referredDeclaration.declaration
-            val valueType = declaration.valueType
-
-            if (valueType is UnionType) {
-                val checkedAlternative = valueType.getAlternative(tagName = guard.checkedTagName)
-
-                if (checkedAlternative != null) {
-                    scope.extendClosed(
-                        name = declaration.givenName,
-                        declaration = SmartCastDeclaration(
-                            givenName = declaration.givenName,
-                            valueType = NarrowUnionType(
-                                alternatives = valueType.alternatives,
-                                narrowedAlternative = checkedAlternative,
-                            ),
-                        ),
-                    )
-                } else scope
-            } else scope
-        } else scope
-    } else scope
-} else scope
-
 fun transformReferenceExpression(
-    scope: StaticScope,
     expression: BiaParser.ReferenceExpressionContext,
-): ReferenceExpression {
+): ReferenceExpressionB {
     val referredName: String = expression.referredName.text
 
-    return ReferenceExpression(
+    return ReferenceExpressionB(
         referredName = referredName,
-        referredDeclaration = scope.getScopedDeclaration(name = referredName)
     )
 }
 
 fun transformTypeExpression(
-    scope: StaticScope,
     typeExpression: BiaParser.TypeExpressionContext,
-): Type = object : BiaParserBaseVisitor<Type>() {
+): TypeExpression = object : BiaParserBaseVisitor<TypeExpression>() {
     override fun visitNumberType(ctx: BiaParser.NumberTypeContext) = NumberType
 
     override fun visitBooleanType(ctx: BiaParser.BooleanTypeContext) = BooleanType
 
     override fun visitBigIntegerType(ctx: BiaParser.BigIntegerTypeContext) = BigIntegerType
 
-    override fun visitFunctionType(ctx: BiaParser.FunctionTypeContext) = FunctionType(
+    override fun visitFunctionType(ctx: BiaParser.FunctionTypeContext) = FunctionTypeB(
         typeVariables = emptyList(),
         argumentListDeclaration = transformArgumentListDeclarations(
-            scope = scope,
             argumentListDeclaration = ctx.argumentListDeclaration(),
         ),
         returnType = transformTypeExpression(
-            scope = scope,
             typeExpression = ctx.returnType,
         ),
     )
 
-    override fun visitConstructedType(ctx: BiaParser.ConstructedTypeContext): Type {
+    override fun visitConstructedType(ctx: BiaParser.ConstructedTypeContext): TypeExpression {
         val typeConstructor: BiaParser.TypeConstructorContext = ctx.typeConstructor()
         val argumentType = transformTypeExpression(
-            scope = scope,
             typeExpression = ctx.typeExpression(),
         )
 
@@ -681,20 +466,18 @@ fun transformTypeExpression(
         )
     }
 
-    override fun visitNullableType(ctx: BiaParser.NullableTypeContext) = NullableType(
+    override fun visitNullableType(ctx: BiaParser.NullableTypeContext) = NullableTypeB(
         baseType = transformTypeExpression(
-            scope = scope,
             typeExpression = ctx.typeExpression(),
         ),
     )
 
-    override fun visitTypeReference(ctx: BiaParser.TypeReferenceContext): Type =
-        transformTypeReference(scope = scope, typeReference = ctx)
+    override fun visitTypeReference(ctx: BiaParser.TypeReferenceContext): TypeExpression =
+        transformTypeReference(typeReference = ctx)
 
-    override fun visitObjectType(ctx: BiaParser.ObjectTypeContext) = ObjectType(
+    override fun visitObjectType(ctx: BiaParser.ObjectTypeContext) = ObjectTypeB(
         entries = ctx.objectTypeEntryDeclaration().associate {
             it.fieldName.text to transformTypeExpression(
-                scope = scope,
                 typeExpression = it.typeExpression(),
             )
         }
@@ -702,17 +485,19 @@ fun transformTypeExpression(
 }.visit(typeExpression)
 
 private fun transformTypeReference(
-    scope: StaticScope,
     typeReference: BiaParser.TypeReferenceContext,
-): Type = scope.getType(givenName = typeReference.name.text)
+): TypeExpression = object : TypeExpression {
+    override fun build(scope: StaticScope): Type =
+        scope.getType(givenName = typeReference.name.text)
+}
 
 fun transformTypeConstructor(
     typeConstructor: BiaParser.TypeConstructorContext,
-    argumentType: Type,
-): Type = object : BiaParserBaseVisitor<Type>() {
+    argumentType: TypeExpression,
+): TypeExpression = object : BiaParserBaseVisitor<TypeExpression>() {
     override fun visitListConstructor(ctx: BiaParser.ListConstructorContext) =
-        ListType(elementType = argumentType)
+        ListTypeB(elementType = argumentType)
 
     override fun visitSequenceConstructor(ctx: BiaParser.SequenceConstructorContext) =
-        SequenceType(elementType = argumentType)
+        SequenceTypeB(elementType = argumentType)
 }.visit(typeConstructor)

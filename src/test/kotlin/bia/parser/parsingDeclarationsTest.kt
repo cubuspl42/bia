@@ -35,8 +35,9 @@ private fun parseDeclaration(
         sourceName = "<declaration>",
     )
 
-    return transformValueDeclaration(
-        scope = StaticScope.empty,
+    return transformValueDefinition(
         declaration = parser.declaration(),
-    )
+    ).build(
+        scope = StaticScope.empty,
+    ).valueDefinition
 }

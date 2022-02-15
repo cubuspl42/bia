@@ -1,5 +1,6 @@
 package bia
 
+import bia.model.buildValueDefinitions
 import bia.parser.StaticScope
 import bia.parser.buildAntlrParser
 import bia.parser.transformDeclarations
@@ -14,21 +15,22 @@ data class Prelude(
                 sourceName = "prelude",
             )
 
-            val result = transformDeclarations(
+            val result = buildValueDefinitions(
                 scope = StaticScope.of(
                     declarations = emptyMap(),
                     typeVariables = emptyMap(),
                 ),
-                inputDeclarations = parser.declarationList().declaration(),
-                outputDeclarations = emptyList(),
+                definitions = transformDeclarations(
+                    inputDeclarations = parser.declarationList().declaration(),
+                )
             )
 
-            result.declarations.forEach {
+            result.definitions.forEach {
                 it.validate()
             }
 
             return Prelude(
-                scope = result.finalScope,
+                scope = result.extendedScope,
             )
         }
     }

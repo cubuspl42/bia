@@ -171,7 +171,7 @@ class ExpressionsTest {
 
         assertEquals(
             expected = IsExpression(
-                expression = ReferenceExpression(
+                checkee = ReferenceExpression(
                     referredName = "arg1",
                     referredDeclaration = ClosedDeclaration(argumentDeclaration),
                 ),

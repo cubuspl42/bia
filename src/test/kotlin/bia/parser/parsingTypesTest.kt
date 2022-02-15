@@ -33,7 +33,8 @@ private fun parseTypeExpression(
     )
 
     return transformTypeExpression(
-        scope = StaticScope.empty,
         typeExpression = parser.typeExpression(),
+    ).build(
+        scope = StaticScope.empty,
     )
 }

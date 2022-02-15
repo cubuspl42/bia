@@ -15,7 +15,7 @@ internal class EvaluationTest {
         assertEquals(
             expected = NumberValue(123.0),
             actual = UntagExpression(
-                expression = TagExpression(
+                untagee = TagExpression(
                     expression = taggedExpression,
                     attachedTagName = "Foo",
                 ),

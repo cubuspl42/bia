@@ -10,6 +10,7 @@ import bia.model.Type
 import bia.model.UnionType
 import bia.model.Value
 import bia.model.asTaggedValue
+import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
 data class TagExpression(
@@ -28,12 +29,22 @@ data class TagExpression(
     )
 }
 
+data class TagExpressionB(
+    val tagee: ExpressionB,
+    val attachedTagName: String,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression = TagExpression(
+        expression = tagee.build(scope = scope),
+        attachedTagName = attachedTagName,
+    )
+}
+
 data class IsExpression(
-    val expression: Expression,
+    val checkee: Expression,
     val checkedTagName: String,
 ) : Expression {
     private val expressionUnionType by lazy {
-        expression.type as? UnionType ?: throw TypeCheckError("Tried to use 'is' expression on non-union")
+        checkee.type as? UnionType ?: throw TypeCheckError("Tried to use 'is' expression on non-union")
     }
 
     private val checkedUnionAlternative by lazy {
@@ -48,12 +59,22 @@ data class IsExpression(
     override val type = BooleanType
 
     override fun evaluate(scope: DynamicScope): Value {
-        val taggedValue = expression.evaluate(scope = scope).asTaggedValue()
+        val taggedValue = checkee.evaluate(scope = scope).asTaggedValue()
 
         return BooleanValue(
             value = taggedValue.tag == checkedTagName,
         )
     }
+}
+
+data class IsExpressionB(
+    val checkee: ExpressionB,
+    val checkedTagName: String,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = IsExpression(
+        checkee = checkee.build(scope = scope),
+        checkedTagName = checkedTagName,
+    )
 }
 
 data class MatchBranch(
@@ -88,16 +109,48 @@ data class MatchExpression(
         TODO()
 }
 
+data class MatchBranchB(
+    val requiredTagName: String,
+    val branch: ExpressionB,
+) {
+    fun build(scope: StaticScope) = MatchBranch(
+        requiredTagName,
+        branch.build(scope = scope),
+    )
+}
+
+data class MatchExpressionB(
+    val matchee: ExpressionB,
+    val taggedBranches: List<MatchBranchB>,
+    val elseBranch: ExpressionB?,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = MatchExpression(
+        matchee = matchee.build(scope = scope),
+        taggedBranches = taggedBranches.map {
+            it.build(scope = scope)
+        },
+        elseBranch = elseBranch?.build(scope = scope),
+    )
+}
+
 data class UntagExpression(
-    val expression: Expression,
+    val untagee: Expression,
 ) : Expression {
     private val expressionUnionType by lazy {
-        expression.type as? NarrowUnionType
+        untagee.type as? NarrowUnionType
             ?: throw TypeCheckError("Tried to untag an expression of non-narrow-union type")
     }
 
     override val type: Type by lazy { expressionUnionType.narrowedType }
 
     override fun evaluate(scope: DynamicScope): Value =
-        expression.evaluate(scope = scope).asTaggedValue().taggedValue
+        untagee.evaluate(scope = scope).asTaggedValue().taggedValue
+}
+
+data class UntagExpressionB(
+    val untagee: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = UntagExpression(
+        untagee = untagee.build(scope)
+    )
 }

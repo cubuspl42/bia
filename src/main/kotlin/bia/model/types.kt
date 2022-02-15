@@ -1,5 +1,6 @@
 package bia.model
 
+import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
 sealed interface Type {
@@ -8,6 +9,10 @@ sealed interface Type {
     fun isAssignableDirectlyTo(other: Type): Boolean = false
 
     fun resolveTypeVariables(mapping: TypeVariableMapping): Type
+}
+
+interface TypeExpression {
+    fun build(scope: StaticScope): Type
 }
 
 data class TypeVariableMapping(
@@ -29,6 +34,10 @@ data class TypeVariable(
         mapping.getMappedType(this) ?: this
 }
 
+data class TypeVariableB(
+    val givenName: String,
+)
+
 @Suppress("IntroduceWhenSubject")
 fun Type.isAssignableTo(other: Type): Boolean =
     when {
@@ -41,17 +50,21 @@ fun Type.isAssignableTo(other: Type): Boolean =
 //fun Type.isAssignableToUnion(union: UnionType): Boolean =
 //    union.alternatives.count { this.isAssignableTo(it.type) } == 1
 
-object NumberType : SpecificType {
+object NumberType : SpecificType, TypeExpression {
     override fun toPrettyString(): String = "Number"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): SpecificType =
         this
+
+    override fun build(scope: StaticScope) = this
 }
 
-object BooleanType : SpecificType {
+object BooleanType : SpecificType, TypeExpression {
     override fun toPrettyString(): String = "Boolean"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): SpecificType = this
+
+    override fun build(scope: StaticScope) = this
 }
 
 data class ListType(val elementType: Type) : SpecificType {
@@ -66,6 +79,12 @@ data class ListType(val elementType: Type) : SpecificType {
         )
 }
 
+data class ListTypeB(val elementType: TypeExpression) : TypeExpression {
+    override fun build(scope: StaticScope) = ListType(
+        elementType = elementType.build(scope),
+    )
+}
+
 data class SequenceType(val elementType: Type) : SpecificType {
     override fun toPrettyString(): String = typeConstructorToPrettyString(
         typeConstructor = "Sequence",
@@ -78,6 +97,12 @@ data class SequenceType(val elementType: Type) : SpecificType {
         )
 }
 
+data class SequenceTypeB(val elementType: TypeExpression) : TypeExpression {
+    override fun build(scope: StaticScope) = SequenceType(
+        elementType = elementType.build(scope),
+    )
+}
+
 data class NullableType(val baseType: Type) : SpecificType {
     override fun toPrettyString(): String =
         "${baseType.toPrettyString()}?"
@@ -88,10 +113,18 @@ data class NullableType(val baseType: Type) : SpecificType {
         )
 }
 
-object BigIntegerType : SpecificType {
+data class NullableTypeB(val baseType: TypeExpression) : TypeExpression {
+    override fun build(scope: StaticScope) = SequenceType(
+        elementType = baseType.build(scope),
+    )
+}
+
+object BigIntegerType : SpecificType, TypeExpression {
     override fun toPrettyString(): String = "BigInteger"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): SpecificType = this
+
+    override fun build(scope: StaticScope) = this
 }
 
 data class FunctionType(
@@ -116,6 +149,29 @@ data class FunctionType(
     )
 }
 
+data class FunctionTypeB(
+    val typeVariables: List<TypeVariableB>,
+    val argumentListDeclaration: ArgumentListDeclarationB,
+    val returnType: TypeExpression,
+) : TypeExpression {
+    override fun build(scope: StaticScope): Type {
+        val builtTypeVariables = buildTypeVariables(
+            scope = scope,
+            typeVariables = typeVariables,
+        )
+
+        return FunctionType(
+            typeVariables = builtTypeVariables.typeVariables,
+            argumentListDeclaration = argumentListDeclaration.build(
+                scope = builtTypeVariables.extendedScope,
+            ),
+            returnType = returnType.build(
+                scope = builtTypeVariables.extendedScope,
+            ),
+        )
+    }
+}
+
 data class ObjectType(
     val entries: Map<String, Type>,
 ) : SpecificType {
@@ -128,6 +184,16 @@ data class ObjectType(
                 type.resolveTypeVariables(mapping = mapping)
             },
         )
+}
+
+data class ObjectTypeB(
+    val entries: Map<String, TypeExpression>,
+) : TypeExpression {
+    override fun build(scope: StaticScope) = ObjectType(
+        entries = entries.mapValues { (_, entryType) ->
+            entryType.build(scope = scope)
+        }
+    )
 }
 
 data class UnionAlternative(

@@ -2,30 +2,36 @@ package bia.model.expressions
 
 import bia.interpreter.DynamicScope
 import bia.model.ArgumentListDeclaration
+import bia.model.ArgumentListDeclarationB
 import bia.model.BasicArgumentListDeclaration
 import bia.model.DefinedFunctionValue
 import bia.model.FunctionBody
+import bia.model.FunctionBodyB
 import bia.model.FunctionType
 import bia.model.ObjectType
 import bia.model.Type
+import bia.model.TypeExpression
 import bia.model.TypeVariable
+import bia.model.TypeVariableB
 import bia.model.TypeVariableMapping
 import bia.model.Value
 import bia.model.asBooleanValue
 import bia.model.asFunctionValue
 import bia.model.asObjectValue
+import bia.model.buildTypeVariables
 import bia.model.validateFunction
 import bia.parser.ClosedDeclaration
 import bia.parser.OpenFunctionDeclaration
 import bia.parser.ScopedDeclaration
+import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
+import bia.type_checker.processGuardSmartCast
 import java.lang.IllegalArgumentException
 
 data class ReferenceExpression(
     val referredName: String,
     val referredDeclaration: ScopedDeclaration?,
 ) : Expression {
-
     override val type: Type by lazy {
         val referredDeclaration =
             this.referredDeclaration ?: throw TypeCheckError("Unresolved reference ($referredName) has no type")
@@ -40,6 +46,15 @@ data class ReferenceExpression(
     override fun evaluate(scope: DynamicScope): Value =
         scope.getValue(name = referredName)
             ?: throw UnsupportedOperationException("Unresolved reference at runtime: $referredName")
+}
+
+data class ReferenceExpressionB(
+    val referredName: String,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = ReferenceExpression(
+        referredName = referredName,
+        referredDeclaration = scope.getScopedDeclaration(name = referredName),
+    )
 }
 
 data class CallExpression(
@@ -103,6 +118,18 @@ data class CallExpression(
     }
 }
 
+data class CallExpressionB(
+    val callee: ExpressionB,
+    val typeArguments: List<TypeExpression>,
+    val arguments: List<ExpressionB>,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression = CallExpression(
+        callee = callee.build(scope = scope),
+        typeArguments = typeArguments.map { it.build(scope = scope) },
+        arguments = arguments.map { it.build(scope = scope) },
+    )
+}
+
 data class IfExpression(
     val guard: Expression,
     val trueBranch: Expression,
@@ -129,6 +156,27 @@ data class IfExpression(
         fun evaluateFalseBranchValue() = falseBranch.evaluate(scope = scope)
 
         return if (guardValue.value) evaluateTrueBranchValue() else evaluateFalseBranchValue()
+    }
+}
+
+data class IfExpressionB(
+    val guard: ExpressionB,
+    val trueBranch: ExpressionB,
+    val falseBranch: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope): IfExpression {
+        val guardExpression = guard.build(scope = scope)
+
+        return IfExpression(
+            guard = guardExpression,
+            trueBranch = trueBranch.build(
+                scope = processGuardSmartCast(
+                    scope = scope,
+                    guard = guardExpression,
+                ),
+            ),
+            falseBranch = falseBranch.build(scope = scope),
+        )
     }
 }
 
@@ -164,6 +212,31 @@ data class LambdaExpression(
     )
 }
 
+data class LambdaExpressionB(
+    val typeVariables: List<TypeVariableB>,
+    val argumentListDeclaration: ArgumentListDeclarationB,
+    val explicitReturnType: TypeExpression?,
+    val body: FunctionBodyB,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression {
+        val builtTypeVariables = buildTypeVariables(
+            scope = scope,
+            typeVariables = typeVariables,
+        )
+
+        return LambdaExpression(
+            typeVariables = builtTypeVariables.typeVariables,
+            argumentListDeclaration = argumentListDeclaration.build(
+                scope = builtTypeVariables.extendedScope,
+            ),
+            explicitReturnType = explicitReturnType?.build(
+                scope = builtTypeVariables.extendedScope,
+            ),
+            body = body.build(scope = builtTypeVariables.extendedScope),
+        )
+    }
+}
+
 data class ObjectFieldReadExpression(
     val objectExpression: Expression,
     val readFieldName: String,
@@ -186,4 +259,14 @@ data class ObjectFieldReadExpression(
         return objectValue.entries[readFieldName]
             ?: throw IllegalArgumentException("Object doesn't have field $readFieldName at runtime")
     }
+}
+
+data class ObjectFieldReadExpressionB(
+    val objectExpression: ExpressionB,
+    val readFieldName: String,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = ObjectFieldReadExpression(
+        objectExpression = objectExpression.build(scope = scope),
+        readFieldName = readFieldName,
+    )
 }

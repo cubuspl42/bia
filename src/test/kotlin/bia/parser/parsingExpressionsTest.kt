@@ -111,7 +111,7 @@ internal class ParsingExpressionsTest {
     fun parseUntag() {
         assertEquals(
             expected = UntagExpression(
-                expression = ReferenceExpression(
+                untagee = ReferenceExpression(
                     referredName = "foo",
                     referredDeclaration = null,
                 ),

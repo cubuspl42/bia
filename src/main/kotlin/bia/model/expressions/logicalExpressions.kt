@@ -8,6 +8,7 @@ import bia.model.Type
 import bia.model.Value
 import bia.model.asBooleanValue
 import bia.model.asNumberValue
+import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
 data class LessThenExpression(
@@ -28,6 +29,16 @@ data class LessThenExpression(
         ) { a, b -> a < b }
 }
 
+data class LessThenExpressionB(
+    val left: ExpressionB,
+    val right: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = LessThenExpression(
+        left = left.build(scope = scope),
+        right = right.build(scope = scope),
+    )
+}
+
 data class GreaterThenExpression(
     val left: Expression,
     val right: Expression,
@@ -44,6 +55,16 @@ data class GreaterThenExpression(
             left = left,
             right = right,
         ) { a, b -> a > b }
+}
+
+data class GreaterThenExpressionB(
+    val left: ExpressionB,
+    val right: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = GreaterThenExpression(
+        left = left.build(scope = scope),
+        right = right.build(scope = scope),
+    )
 }
 
 data class OrExpression(
@@ -64,6 +85,16 @@ data class OrExpression(
         ) { a, b -> a || b }
 }
 
+data class OrExpressionB(
+    val left: ExpressionB,
+    val right: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = OrExpression(
+        left = left.build(scope = scope),
+        right = right.build(scope = scope),
+    )
+}
+
 data class AndExpression(
     val left: Expression,
     val right: Expression,
@@ -80,6 +111,16 @@ data class AndExpression(
             left = left,
             right = right,
         ) { a, b -> a && b }
+}
+
+data class AndExpressionB(
+    val left: ExpressionB,
+    val right: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = AndExpression(
+        left = left.build(scope = scope),
+        right = right.build(scope = scope),
+    )
 }
 
 data class NotExpression(
@@ -100,6 +141,14 @@ data class NotExpression(
     }
 }
 
+data class NotExpressionB(
+    val negated: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = NotExpression(
+        negated = negated.build(scope = scope),
+    )
+}
+
 data class EqualsExpression(
     val left: Expression,
     val right: Expression,
@@ -118,6 +167,16 @@ data class EqualsExpression(
             value = leftValue.value == rightValue.value,
         )
     }
+}
+
+data class EqualsExpressionB(
+    val left: ExpressionB,
+    val right: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope) = EqualsExpression(
+        left = left.build(scope = scope),
+        right = right.build(scope = scope),
+    )
 }
 
 private fun evaluateNumberLogicalExpression(

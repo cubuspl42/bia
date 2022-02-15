@@ -16,6 +16,8 @@ fun parseExpression(
     val parser = buildAntlrParser(source = source, sourceName = "<expression>")
 
     return transformExpression(
+        expression = parser.expression(),
+    ).build(
         scope = StaticScope.of(
             declarations = scopeDeclarations.associate {
                 it.givenName to ClosedDeclaration(declaration = it)
@@ -24,6 +26,5 @@ fun parseExpression(
                 it.givenName to listOf(it)
             },
         ),
-        expression = parser.expression(),
     )
 }

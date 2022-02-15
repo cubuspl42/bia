@@ -15,8 +15,9 @@ fun parseProgram(
     val parser = buildAntlrParser(source, sourceName)
 
     val programBody = transformProgram(
-        outerScope = prelude.scope,
         parser = parser,
+    ).build(
+        scope = prelude.scope,
     )
 
     return programBody

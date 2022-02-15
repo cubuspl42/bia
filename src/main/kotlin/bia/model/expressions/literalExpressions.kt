@@ -9,10 +9,15 @@ import bia.model.ObjectType
 import bia.model.ObjectValue
 import bia.model.Type
 import bia.model.Value
+import bia.parser.StaticScope
+
+sealed class LiteralExpression : Expression, ExpressionB {
+    override fun build(scope: StaticScope): Expression = this
+}
 
 data class IntLiteralExpression(
     val value: Long,
-) : Expression {
+) : LiteralExpression() {
     override val type: Type = NumberType
 
     override fun evaluate(scope: DynamicScope): Value =
@@ -23,7 +28,7 @@ data class IntLiteralExpression(
 
 data class BooleanLiteralExpression(
     val value: Boolean,
-) : Expression {
+) : LiteralExpression() {
     override val type: Type = BooleanType
 
     override fun evaluate(scope: DynamicScope): Value =
@@ -34,7 +39,7 @@ data class BooleanLiteralExpression(
 
 data class ObjectLiteralExpression(
     val entries: Map<String, Expression>,
-) : Expression {
+) : LiteralExpression() {
     override val type: Type by lazy {
         ObjectType(
             entries = entries.mapValues { (_, expression) ->
@@ -48,5 +53,16 @@ data class ObjectLiteralExpression(
             entries = entries.mapValues { (_, expression) ->
                 expression.evaluate(scope = scope)
             },
+        )
+}
+
+data class ObjectLiteralExpressionB(
+    val entries: Map<String, ExpressionB>,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression =
+        ObjectLiteralExpression(
+            entries = entries.mapValues { (_, expressionB) ->
+                expressionB.build(scope)
+            }
         )
 }

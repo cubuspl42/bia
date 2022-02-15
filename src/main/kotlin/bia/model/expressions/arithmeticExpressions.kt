@@ -6,6 +6,7 @@ import bia.model.NumberValue
 import bia.model.Type
 import bia.model.Value
 import bia.model.asNumberValue
+import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
 data class AdditionExpression(
@@ -26,6 +27,16 @@ data class AdditionExpression(
         ) { a, b -> a + b }
 }
 
+data class AdditionExpressionB(
+    val augend: ExpressionB,
+    val addend: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression = AdditionExpression(
+        augend = augend.build(scope = scope),
+        addend = addend.build(scope = scope),
+    )
+}
+
 data class SubtractionExpression(
     val minuend: Expression,
     val subtrahend: Expression,
@@ -42,6 +53,16 @@ data class SubtractionExpression(
             left = minuend,
             right = subtrahend,
         ) { a, b -> a - b }
+}
+
+data class SubtractionExpressionB(
+    val minuend: ExpressionB,
+    val subtrahend: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression = SubtractionExpression(
+        minuend = minuend.build(scope = scope),
+        subtrahend = subtrahend.build(scope = scope),
+    )
 }
 
 data class MultiplicationExpression(
@@ -62,6 +83,16 @@ data class MultiplicationExpression(
         ) { a, b -> a * b }
 }
 
+data class MultiplicationExpressionB(
+    val multiplier: ExpressionB,
+    val multiplicand: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression = MultiplicationExpression(
+        multiplier = multiplier.build(scope = scope),
+        multiplicand = multiplicand.build(scope = scope),
+    )
+}
+
 data class DivisionExpression(
     val dividend: Expression,
     val divisor: Expression,
@@ -78,6 +109,16 @@ data class DivisionExpression(
             left = dividend,
             right = divisor,
         ) { a, b -> a / b }
+}
+
+data class DivisionExpressionB(
+    val dividend: ExpressionB,
+    val divisor: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression = DivisionExpression(
+        dividend = dividend.build(scope = scope),
+        divisor = divisor.build(scope = scope),
+    )
 }
 
 data class IntegerDivisionExpression(
@@ -98,6 +139,16 @@ data class IntegerDivisionExpression(
         ) { a, b -> (a.toLong() / b.toLong()).toDouble() }
 }
 
+data class IntegerDivisionExpressionB(
+    val dividend: ExpressionB,
+    val divisor: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression = IntegerDivisionExpression(
+        dividend = dividend.build(scope = scope),
+        divisor = divisor.build(scope = scope),
+    )
+}
+
 data class ReminderExpression(
     val dividend: Expression,
     val divisor: Expression,
@@ -114,6 +165,16 @@ data class ReminderExpression(
             left = dividend,
             right = divisor,
         ) { a, b -> a % b }
+}
+
+data class ReminderExpressionB(
+    val dividend: ExpressionB,
+    val divisor: ExpressionB,
+) : ExpressionB {
+    override fun build(scope: StaticScope): Expression = ReminderExpression(
+        dividend = dividend.build(scope = scope),
+        divisor = divisor.build(scope = scope),
+    )
 }
 
 private fun evaluateNumberBinaryExpression(

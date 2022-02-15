@@ -18,6 +18,10 @@ sealed interface ArgumentListDeclaration {
     fun validateCall(functionName: String, arguments: List<Expression>)
 }
 
+interface ArgumentListDeclarationB {
+    fun build(scope: StaticScope): ArgumentListDeclaration
+}
+
 data class BasicArgumentListDeclaration(
     val argumentDeclarations: List<ArgumentDeclaration>,
 ) : ArgumentListDeclaration {
@@ -84,6 +88,17 @@ data class BasicArgumentListDeclaration(
     }
 }
 
+data class BasicArgumentListDeclarationB(
+    val argumentDeclarations: List<ArgumentDeclarationB>,
+) : ArgumentListDeclarationB {
+    override fun build(scope: StaticScope): ArgumentListDeclaration =
+        BasicArgumentListDeclaration(
+            argumentDeclarations = argumentDeclarations.map {
+                it.build(scope = scope)
+            },
+        )
+}
+
 data class VarargArgumentListDeclaration(
     val givenName: String,
     val type: Type,
@@ -129,4 +144,15 @@ data class VarargArgumentListDeclaration(
             }
         }
     }
+}
+
+data class VarargArgumentListDeclarationB(
+    val givenName: String,
+    val type: TypeExpression,
+) : ArgumentListDeclarationB {
+    override fun build(scope: StaticScope): VarargArgumentListDeclaration =
+        VarargArgumentListDeclaration(
+            givenName = givenName,
+            type = type.build(scope = scope),
+        )
 }
