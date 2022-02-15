@@ -134,14 +134,19 @@ data class DefDeclarationB(
             get() = defDeclaration
     }
 
+    @Suppress("NAME_SHADOWING")
     override fun build(scope: StaticScope): Built {
         val builtTypeVariables = buildTypeVariables(
             scope = scope,
             typeVariables = typeVariables,
         )
 
+        val scope = builtTypeVariables.extendedScope
+
         val builtArgumentListDeclaration: ArgumentListDeclaration =
-            argumentListDeclaration.build(scope = scope)
+            argumentListDeclaration.build(
+                scope = scope,
+            )
 
         val functionDeclaration = object {
             val functionDeclaration: DefDeclaration by lazy {
@@ -149,13 +154,15 @@ data class DefDeclarationB(
                     givenName = givenName,
                     typeVariables = builtTypeVariables.typeVariables,
                     argumentListDeclaration = builtArgumentListDeclaration,
-                    explicitReturnType = explicitReturnType?.build(scope = scope),
+                    explicitReturnType = explicitReturnType?.build(
+                        scope = scope,
+                    ),
                     buildDefinition = {
                         body?.let {
                             FunctionDefinition(
                                 body = it.build(
                                     scope = builtArgumentListDeclaration.extendScope(
-                                        scope = builtTypeVariables.extendedScope.extendOpen(
+                                        scope = scope.extendOpen(
                                             name = givenName,
                                             declaration = functionDeclaration,
                                         ),

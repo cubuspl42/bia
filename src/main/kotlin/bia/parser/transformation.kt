@@ -18,6 +18,7 @@ import bia.model.TopLevelDeclarationB
 import bia.model.Type
 import bia.model.TypeAliasDeclarationB
 import bia.model.TypeExpression
+import bia.model.TypeReference
 import bia.model.TypeVariableB
 import bia.model.UnionAlternativeB
 import bia.model.UnionDeclarationB
@@ -486,10 +487,9 @@ fun transformTypeExpression(
 
 private fun transformTypeReference(
     typeReference: BiaParser.TypeReferenceContext,
-): TypeExpression = object : TypeExpression {
-    override fun build(scope: StaticScope): Type =
-        scope.getType(givenName = typeReference.name.text)
-}
+): TypeExpression = TypeReference(
+    referredName = typeReference.name.text
+)
 
 fun transformTypeConstructor(
     typeConstructor: BiaParser.TypeConstructorContext,

@@ -1,21 +1,23 @@
-def <A> listId(l : List<A>) {
-    return l
-}
+// TODO: Add test & fix "There's no type variable named A"
+// def <A> listId(l : List<A>) {
+//    return l
+// }
 
 val foo = (a : Number, b : Boolean) -> Number => {
     return if (b) then a + 1 else a
 }
 
-def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
-    return if size:L(l) == 0 then emptyList<B>() else (() => {
-        val fst = first:L<A>(l)
-        val tail = drop:L<A>(l, 1)
-        val headOut = f(fst)
-        val tailOut = map<A, B>(tail, f)
-
-        return cons:L<B>(headOut, tailOut)
-    })()
-}
+// TODO: Add test & fix "There's no type variable named A"
+// def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
+//    return if size:L(l) == 0 then emptyList<B>() else (() => {
+//        val fst = first:L<A>(l)
+//        val tail = drop:L<A>(l, 1)
+//        val headOut = f(fst)
+//        val tailOut = map<A, B>(tail, f)
+//
+//        return cons:L<B>(headOut, tailOut)
+//    })()
+// }
 
 typealias Foo = {
     foo1 : Number,
@@ -35,15 +37,22 @@ def bar(obj : Union1) {
     return if (obj is Foo) then (untag obj).foo1 else 0
 }
 
-val l1 = listOf(1, 2, 3, 4)
+def bar2(obj : Union1) {
+    return match obj {
+        case Foo => (untag obj).foo1
+        case Bar => (untag obj).bar1
+    }
+}
 
-val l2 = listId<Number>(l1)
+// val l1 = listOf(1, 2, 3, 4)
 
-val l3 = map<Number, Boolean>(l1, (e : Number) => {
-    return e % 2 == 0
-})
+// val l2 = listId<Number>(l1)
 
-val n = foo(1, true)
+// val l3 = map<Number, Boolean>(l1, (e : Number) => {
+//     return e % 2 == 0
+// })
+
+// val n = foo(1, true)
 
 val main = () => {
     return bar({

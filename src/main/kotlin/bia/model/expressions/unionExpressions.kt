@@ -4,9 +4,11 @@ import bia.interpreter.DynamicScope
 import bia.model.BooleanType
 import bia.model.BooleanValue
 import bia.model.NarrowUnionType
+import bia.model.SmartCastDeclaration
 import bia.model.TaggedType
 import bia.model.TaggedValue
 import bia.model.Type
+import bia.model.UnionAlternative
 import bia.model.UnionType
 import bia.model.Value
 import bia.model.asTaggedValue
@@ -124,13 +126,52 @@ data class MatchExpressionB(
     val taggedBranches: List<MatchBranchB>,
     val elseBranch: ExpressionB?,
 ) : ExpressionB {
-    override fun build(scope: StaticScope) = MatchExpression(
-        matchee = matchee.build(scope = scope),
-        taggedBranches = taggedBranches.map {
-            it.build(scope = scope)
-        },
-        elseBranch = elseBranch?.build(scope = scope),
-    )
+    override fun build(scope: StaticScope): MatchExpression {
+        val matcheeExpression = matchee.build(scope = scope)
+
+        fun extendScopeWithNarrowedType(
+            tagName: String,
+        ): StaticScope {
+            val matcheeReferenceExpression =
+                matcheeExpression as? ReferenceExpression
+
+            val referredScopedDeclaration =
+                matcheeReferenceExpression?.referredDeclaration ?: return scope
+
+            val referredDeclaration = referredScopedDeclaration.declaration
+
+            val matcheeUnionType: UnionType =
+                (matcheeReferenceExpression.type as? UnionType) ?: return scope
+
+            val checkedAlternative: UnionAlternative =
+                matcheeUnionType.getAlternative(
+                    tagName = tagName,
+                ) ?: return scope
+
+            return scope.extendClosed(
+                name = referredDeclaration.givenName,
+                declaration = SmartCastDeclaration(
+                    givenName = referredDeclaration.givenName,
+                    valueType = NarrowUnionType(
+                        alternatives = matcheeUnionType.alternatives,
+                        narrowedAlternative = checkedAlternative,
+                    ),
+                ),
+            )
+        }
+
+        return MatchExpression(
+            matchee = matcheeExpression,
+            taggedBranches = taggedBranches.map { matchBranch ->
+                matchBranch.build(
+                    scope = extendScopeWithNarrowedType(
+                        tagName = matchBranch.requiredTagName,
+                    ),
+                )
+            },
+            elseBranch = elseBranch?.build(scope = scope),
+        )
+    }
 }
 
 data class UntagExpression(

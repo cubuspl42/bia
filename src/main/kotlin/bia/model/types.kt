@@ -15,6 +15,13 @@ interface TypeExpression {
     fun build(scope: StaticScope): Type
 }
 
+data class TypeReference(
+    val referredName: String,
+): TypeExpression {
+    override fun build(scope: StaticScope): Type =
+        scope.getType(givenName = referredName)
+}
+
 data class TypeVariableMapping(
     private val mapping: Map<TypeVariable, Type>,
 ) {

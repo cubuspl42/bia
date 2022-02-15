@@ -1,7 +1,14 @@
 package bia.type_checker
 
 import bia.model.ArgumentDeclaration
+import bia.model.ArgumentDeclarationB
+import bia.model.BasicArgumentListDeclaration
+import bia.model.BasicArgumentListDeclarationB
 import bia.model.BooleanType
+import bia.model.DefDeclarationB
+import bia.model.FunctionBody
+import bia.model.FunctionBodyB
+import bia.model.FunctionType
 import bia.model.expressions.IfExpression
 import bia.model.expressions.IntLiteralExpression
 import bia.model.expressions.IsExpression
@@ -15,14 +22,29 @@ import bia.model.expressions.ReferenceExpression
 import bia.model.SmartCastDeclaration
 import bia.model.TaggedType
 import bia.model.Type
+import bia.model.TypeReference
+import bia.model.TypeVariable
+import bia.model.TypeVariableB
 import bia.model.UnionAlternative
 import bia.model.expressions.UntagExpression
 import bia.model.WideUnionType
+import bia.model.expressions.BooleanLiteralExpression
+import bia.model.expressions.LambdaExpression
+import bia.model.expressions.LambdaExpressionB
+import bia.model.expressions.MatchBranchB
+import bia.model.expressions.MatchExpressionB
+import bia.model.expressions.ObjectFieldReadExpressionB
+import bia.model.expressions.ReferenceExpressionB
+import bia.model.expressions.UntagExpressionB
 import bia.model.isAssignableTo
 import bia.parser.ClosedDeclaration
+import bia.parser.ScopedDeclaration
+import bia.parser.StaticScope
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import kotlin.math.exp
+import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -159,8 +181,99 @@ internal class TypeCheckingTest {
     }
 
     @Test
-    @Disabled // TODO: Make this test pass
-    fun testMatch() {
+    @Disabled // TODO: Make this pass
+    fun testMatchMissingElseBranch() {
+        val unionType = WideUnionType(
+            alternatives = setOf(
+                UnionAlternative(
+                    tagName = "Foo",
+                    type = NumberType,
+                ),
+                UnionAlternative(
+                    tagName = "Bar",
+                    type = BooleanType,
+                )
+            )
+        )
+
+        assertThrows<TypeCheckError> {
+            val matchExpression = MatchExpressionB(
+                matchee = ReferenceExpressionB(
+                    referredName = "arg",
+                ),
+                taggedBranches = listOf(
+                    MatchBranchB(
+                        requiredTagName = "Foo",
+                        branch = BooleanLiteralExpression(value = true),
+                    ),
+                ),
+                elseBranch = null,
+            ).build(
+                scope = StaticScope.of(
+                    declarations = mapOf(
+                        argumentDeclaration(
+                            givenName = "arg",
+                            valueType = unionType,
+                        ),
+                    ),
+                    typeVariables = emptyMap(),
+                ),
+            )
+
+            matchExpression.validate()
+        }
+    }
+
+    @Test
+    @Disabled // TODO: Make this pass
+    fun testMatchNonExistingTag() {
+        val unionType = WideUnionType(
+            alternatives = setOf(
+                UnionAlternative(
+                    tagName = "Foo",
+                    type = NumberType,
+                ),
+                UnionAlternative(
+                    tagName = "Bar",
+                    type = BooleanType,
+                )
+            )
+        )
+
+        assertThrows<TypeCheckError> {
+            val matchExpression = MatchExpressionB(
+                matchee = ReferenceExpressionB(
+                    referredName = "arg",
+                ),
+                taggedBranches = listOf(
+                    MatchBranchB(
+                        requiredTagName = "Foo",
+                        branch = IntLiteralExpression(value = 0),
+                    ),
+                    MatchBranchB(
+                        requiredTagName = "Baz",
+                        branch = IntLiteralExpression(value = 1),
+                    ),
+                ),
+                elseBranch = null,
+            ).build(
+                scope = StaticScope.of(
+                    declarations = mapOf(
+                        argumentDeclaration(
+                            givenName = "arg",
+                            valueType = unionType,
+                        ),
+                    ),
+                    typeVariables = emptyMap(),
+                ),
+            )
+
+            matchExpression.validate()
+        }
+    }
+
+    @Test
+    fun testMatchSmartCast() {
         val objectType1 = ObjectType(
             entries = mapOf(
                 "field1" to NumberType,
@@ -181,36 +294,33 @@ internal class TypeCheckingTest {
                 ),
                 UnionAlternative(
                     tagName = "Bar",
-                    type = BooleanType,
+                    type = objectType2,
                 )
             )
         )
 
-        val matchExpression = MatchExpression(
-            matchee = argumentReference(
+        val matchExpression = MatchExpressionB(
+            matchee = ReferenceExpressionB(
                 referredName = "arg",
-                valueType = unionType,
             ),
             taggedBranches = listOf(
-                MatchBranch(
+                MatchBranchB(
                     requiredTagName = "Foo",
-                    branch = ObjectFieldReadExpression(
-                        objectExpression = UntagExpression(
-                            untagee = argumentReference(
-                                referredName = "foo",
-                                valueType = objectType1,
+                    branch = ObjectFieldReadExpressionB(
+                        objectExpression = UntagExpressionB(
+                            untagee = ReferenceExpressionB(
+                                referredName = "arg",
                             ),
                         ),
                         readFieldName = "field1",
                     ),
                 ),
-                MatchBranch(
+                MatchBranchB(
                     requiredTagName = "Bar",
-                    branch = ObjectFieldReadExpression(
-                        objectExpression = UntagExpression(
-                            untagee = argumentReference(
-                                referredName = "bar",
-                                valueType = objectType2,
+                    branch = ObjectFieldReadExpressionB(
+                        objectExpression = UntagExpressionB(
+                            untagee = ReferenceExpressionB(
+                                referredName = "arg",
                             ),
                         ),
                         readFieldName = "field2",
@@ -218,6 +328,16 @@ internal class TypeCheckingTest {
                 ),
             ),
             elseBranch = null,
+        ).build(
+            scope = StaticScope.of(
+                declarations = mapOf(
+                    argumentDeclaration(
+                        givenName = "arg",
+                        valueType = unionType,
+                    ),
+                ),
+                typeVariables = emptyMap(),
+            ),
         )
 
         matchExpression.validate()
@@ -227,7 +347,131 @@ internal class TypeCheckingTest {
             actual = matchExpression.type,
         )
     }
+
+    @Test
+    fun testDefDeclarationGeneric() {
+        val builtDefDeclaration = DefDeclarationB(
+            givenName = "id",
+            typeVariables = listOf(
+                TypeVariableB("A"),
+            ),
+            argumentListDeclaration = BasicArgumentListDeclarationB(
+                argumentDeclarations = listOf(
+                    ArgumentDeclarationB(
+                        givenName = "a",
+                        valueType = TypeReference(referredName = "A"),
+                    ),
+                ),
+            ),
+            explicitReturnType = TypeReference(referredName = "A"),
+            body = FunctionBodyB(
+                definitions = emptyList(),
+                returned = ReferenceExpressionB(
+                    referredName = "a",
+                ),
+            )
+        ).build(
+            scope = StaticScope.empty,
+        )
+
+        val defDeclaration = builtDefDeclaration.defDeclaration
+
+        defDeclaration.validate()
+
+        val extendedScope = builtDefDeclaration.extendedScope
+
+        assertContains(
+            iterable = extendedScope.declarations.values,
+            element = ClosedDeclaration(defDeclaration),
+        )
+    }
+
+    @Test
+    fun testLambdaExpressionGeneric() {
+        val lambdaExpression = LambdaExpressionB(
+            typeVariables = listOf(
+                TypeVariableB("A"),
+            ),
+            argumentListDeclaration = BasicArgumentListDeclarationB(
+                argumentDeclarations = listOf(
+                    ArgumentDeclarationB(
+                        givenName = "a",
+                        valueType = TypeReference(referredName = "A"),
+                    ),
+                ),
+            ),
+            explicitReturnType = TypeReference(referredName = "A"),
+            body = FunctionBodyB(
+                definitions = emptyList(),
+                returned = ReferenceExpressionB(
+                    referredName = "a",
+                ),
+            )
+        ).build(
+            scope = StaticScope.empty,
+        )
+
+        val typeVariable = TypeVariable(givenName = "A", id = 0)
+
+        assertEquals(
+            expected = LambdaExpression(
+                typeVariables = listOf(
+                    typeVariable,
+                ),
+                argumentListDeclaration = BasicArgumentListDeclaration(
+                    argumentDeclarations = listOf(
+                        ArgumentDeclaration(
+                            givenName = "a",
+                            valueType = typeVariable,
+                        ),
+                    ),
+                ),
+                explicitReturnType = typeVariable,
+                body = FunctionBody(
+                    definitions = emptyList(),
+                    returned = ReferenceExpression(
+                        referredName = "a",
+                        referredDeclaration = ClosedDeclaration(
+                            declaration = ArgumentDeclaration(
+                                givenName = "a",
+                                valueType = typeVariable,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            actual = lambdaExpression,
+        )
+
+        assertEquals(
+            expected = FunctionType(
+                typeVariables = listOf(
+                    typeVariable,
+                ),
+                argumentListDeclaration = BasicArgumentListDeclaration(
+                    argumentDeclarations = listOf(
+                        ArgumentDeclaration(
+                            givenName = "a",
+                            valueType = typeVariable,
+                        ),
+                    ),
+                ),
+                returnType = typeVariable,
+            ),
+            actual = lambdaExpression.type,
+        )
+    }
 }
+
+private fun argumentDeclaration(
+    givenName: String,
+    valueType: Type,
+): Pair<String, ScopedDeclaration> = givenName to ClosedDeclaration(
+    declaration = ArgumentDeclaration(
+        givenName = givenName,
+        valueType = valueType,
+    )
+)
 
 private fun argumentReference(
     referredName: String,

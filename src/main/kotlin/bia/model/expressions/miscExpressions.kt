@@ -218,21 +218,30 @@ data class LambdaExpressionB(
     val explicitReturnType: TypeExpression?,
     val body: FunctionBodyB,
 ) : ExpressionB {
+    @Suppress("NAME_SHADOWING")
     override fun build(scope: StaticScope): Expression {
         val builtTypeVariables = buildTypeVariables(
             scope = scope,
             typeVariables = typeVariables,
         )
 
+        var scope = builtTypeVariables.extendedScope
+
+        val argumentListDeclaration = argumentListDeclaration.build(
+            scope = scope,
+        )
+
+        scope = argumentListDeclaration.extendScope(
+            scope = scope,
+        )
+
         return LambdaExpression(
             typeVariables = builtTypeVariables.typeVariables,
-            argumentListDeclaration = argumentListDeclaration.build(
-                scope = builtTypeVariables.extendedScope,
-            ),
+            argumentListDeclaration = argumentListDeclaration,
             explicitReturnType = explicitReturnType?.build(
-                scope = builtTypeVariables.extendedScope,
+                scope = scope,
             ),
-            body = body.build(scope = builtTypeVariables.extendedScope),
+            body = body.build(scope = scope),
         )
     }
 }
