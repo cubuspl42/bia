@@ -1,6 +1,7 @@
 package bia.model.expressions
 
 import bia.interpreter.DynamicScope
+import bia.interpreter.EvaluationError
 import bia.model.BooleanType
 import bia.model.BooleanValue
 import bia.model.NarrowUnionType
@@ -107,8 +108,22 @@ data class MatchExpression(
         firstBranch.type
     }
 
-    override fun evaluate(scope: DynamicScope): Value =
-        TODO()
+    override fun evaluate(scope: DynamicScope): Value {
+        val matchee = matchee.evaluate(scope = scope).asTaggedValue()
+
+        val matchingBranch = taggedBranches.singleOrNull {
+            it.requiredTagName == matchee.tag
+        }
+
+        return if (matchingBranch != null) {
+            matchingBranch.branch.evaluate(scope = scope)
+        } else {
+            val elseBranch = elseBranch
+                ?: throw EvaluationError("Match expression has no matching branch for tag ${matchee.tag}, but there's no else branch either")
+
+            elseBranch.evaluate(scope = scope)
+        }
+    }
 }
 
 data class MatchBranchB(

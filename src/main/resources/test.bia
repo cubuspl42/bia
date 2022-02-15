@@ -39,7 +39,7 @@ def bar(obj : Union1) {
 
 def bar2(obj : Union1) {
     return match obj {
-        case Foo => (untag obj).foo1
+        case Foo => (untag obj).foo1 * 10
         case Bar => (untag obj).bar1
     }
 }
@@ -55,7 +55,7 @@ def bar2(obj : Union1) {
 // val n = foo(1, true)
 
 val main = () => {
-    return bar({
+    return bar2({
         foo1 = 10,
         foo2 = false
     } # Foo)
