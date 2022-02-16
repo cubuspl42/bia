@@ -24,6 +24,8 @@ val MyClass1:mul = (this : MyClass1) => (arg1 : Number, arg2 : Number) => {
     return this.foo * arg1 * arg2
 }
 
+union Option = <A> A #Some | #None
+
 val main = () => {
     // return bar2({
     //     foo1 = 10,

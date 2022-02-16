@@ -384,6 +384,7 @@ data class UnionAlternativeB(
 
 data class UnionDeclarationB(
     val unionName: String,
+    val typeVariables: List<TypeVariableB>,
     val alternatives: List<UnionAlternativeB>,
 ) : TopLevelDeclarationB {
     data class Built(

@@ -64,7 +64,7 @@ fun transformProgram(
     }
 )
 
-private fun transformTopLevelDeclaration(
+fun transformTopLevelDeclaration(
     topLevelDeclaration: BiaParser.TopLevelDeclarationContext,
 ): TopLevelDeclarationB = object : BiaParserBaseVisitor<TopLevelDeclarationB>() {
     override fun visitDeclaration(ctx: BiaParser.DeclarationContext): TopLevelDeclarationB =
@@ -84,6 +84,9 @@ private fun transformTopLevelDeclaration(
         ctx: BiaParser.UnionDeclarationContext,
     ): TopLevelDeclarationB = UnionDeclarationB(
         unionName = ctx.givenName.text,
+        typeVariables = transformTypeVariableDeclarations(
+            genericArgumentDeclarationList = ctx.genericArgumentListDeclaration(),
+        ),
         alternatives = ctx.unionEntryDeclaration().map {
             UnionAlternativeB(
                 tagName = it.typeReference().text,

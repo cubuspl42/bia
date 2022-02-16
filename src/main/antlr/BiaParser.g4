@@ -114,6 +114,6 @@ blockBody : declarationList return_ ;
 
 return_ : Return expression ;
 
-unionDeclaration : Union givenName=Identifier Assign unionEntryDeclaration (Pipe unionEntryDeclaration)* ;
+unionDeclaration : Union givenName=Identifier Assign genericArgumentListDeclaration? unionEntryDeclaration (Pipe unionEntryDeclaration)* ;
 
 unionEntryDeclaration : typeReference ;
