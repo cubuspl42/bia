@@ -7,8 +7,11 @@ import bia.model.expressions.MatchExpression
 import bia.model.expressions.ReferenceExpression
 import bia.model.expressions.TagExpression
 import bia.model.TypeVariable
+import bia.model.expressions.CallExpressionB
+import bia.model.expressions.ReferenceExpressionB
 import bia.model.expressions.UntagExpression
 import bia.test_utils.parseExpression
+import bia.test_utils.parseExpressionB
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
 
@@ -161,6 +164,57 @@ internal class ParsingExpressionsTest {
                         else => baz
                     }
                 """.trimIndent(),
+            ),
+        )
+    }
+
+    @Test
+    fun parsePostfixCall() {
+        assertEquals(
+            expected = CallExpressionB(
+                callee = ReferenceExpressionB(
+                    referredName = "functionName",
+                ),
+                typeArguments = emptyList(),
+                arguments = listOf(
+                    ReferenceExpressionB(
+                        referredName = "callee",
+                    ),
+                ),
+            ),
+            actual = parseExpressionB(
+                source = "callee :functionName",
+            ),
+        )
+    }
+
+    @Test
+    fun parseInfixCall() {
+        assertEquals(
+            expected = CallExpressionB(
+                callee = CallExpressionB(
+                    callee = ReferenceExpressionB(
+                        referredName = "functionName",
+                    ),
+                    typeArguments = emptyList(),
+                    arguments = listOf(
+                        ReferenceExpressionB(
+                            referredName = "callee",
+                        ),
+                    ),
+                ),
+                typeArguments = emptyList(),
+                arguments = listOf(
+                    ReferenceExpressionB(
+                        referredName = "arg1",
+                    ),
+                    ReferenceExpressionB(
+                        referredName = "arg2",
+                    ),
+                ),
+            ),
+            actual = parseExpressionB(
+                source = "callee :functionName (arg1, arg2)",
             ),
         )
     }

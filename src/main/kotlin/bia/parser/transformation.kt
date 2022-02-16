@@ -249,6 +249,18 @@ fun transformExpression(
             },
         )
 
+    override fun visitPostfixCallExpression(
+        ctx: BiaParser.PostfixCallExpressionContext,
+    ): ExpressionB = CallExpressionB(
+        callee = ReferenceExpressionB(
+            referredName = ctx.referredCalleeName.text,
+        ),
+        typeArguments = emptyList(),
+        arguments = listOf(
+            transformExpression(expression = ctx.self),
+        ),
+    )
+
     override fun visitEqualsOperation(ctx: BiaParser.EqualsOperationContext): ExpressionB =
         EqualsExpressionB(
             left = transformExpression(

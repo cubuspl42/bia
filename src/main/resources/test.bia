@@ -44,6 +44,34 @@ def bar2(obj : Union1) {
     }
 }
 
+typealias MyClass1 = {
+    foo : Number,
+    bar : Number,
+    baz : Boolean
+}
+
+val MyClass1:new = (args : {
+    foo : Number,
+    bar : Number,
+    baz : Boolean
+}) -> MyClass1 => {
+    return {
+        foo = args.foo,
+        bar = args.bar,
+        baz = args.baz
+    }
+}
+
+val MyClass1:foo = (this : MyClass1) -> Number => {
+    return this.foo
+}
+
+val MyClass1:mul = (this : MyClass1) => {
+    return (arg1 : Number, arg2 : Number) => {
+        return this.foo * arg1 * arg2
+    }
+}
+
 // val l1 = listOf(1, 2, 3, 4)
 
 // val l2 = listId<Number>(l1)
@@ -55,8 +83,16 @@ def bar2(obj : Union1) {
 // val n = foo(1, true)
 
 val main = () => {
-    return bar2({
-        foo1 = 10,
-        foo2 = false
-    } # Foo)
+    // return bar2({
+    //     foo1 = 10,
+    //     foo2 = false
+    // } # Foo)
+
+    val myObj1 = MyClass1:new({
+        foo = 3,
+        bar = 2,
+        baz = true
+    })
+
+    return myObj1 :MyClass1:mul (4, 5)
 }

@@ -57,6 +57,7 @@ expression
 callableExpression
     : LeftParen expression RightParen # parenExpression
     | callee=callableExpression callTypeVariableList? LeftParen callArgumentList RightParen # callExpression
+    | self=callableExpression Colon referredCalleeName=Identifier # postfixCallExpression
     | referredName=Identifier # referenceExpression
     | matchExpression # matchExpressionAlt
     ;
