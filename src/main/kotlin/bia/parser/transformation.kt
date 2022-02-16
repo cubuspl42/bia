@@ -15,7 +15,6 @@ import bia.model.ObjectTypeB
 import bia.model.ProgramB
 import bia.model.SequenceTypeB
 import bia.model.TopLevelDeclarationB
-import bia.model.Type
 import bia.model.TypeAliasDeclarationB
 import bia.model.TypeExpression
 import bia.model.TypeReference
@@ -23,7 +22,6 @@ import bia.model.TypeVariableB
 import bia.model.UnionAlternativeB
 import bia.model.UnionDeclarationB
 import bia.model.ValDeclarationB
-import bia.model.ValueDefinition
 import bia.model.ValueDefinitionB
 import bia.model.VarargArgumentListDeclarationB
 import bia.model.expressions.AdditionExpressionB
@@ -97,8 +95,8 @@ private fun transformTopLevelDeclaration(
     )
 }.visit(topLevelDeclaration)
 
-fun transformBody(
-    body: BiaParser.BodyContext,
+fun transformBlockBody(
+    body: BiaParser.BlockBodyContext,
 ): FunctionBodyB {
     val result = transformDeclarations(
         inputDeclarations = body.declarationList().declaration(),
@@ -153,7 +151,7 @@ fun transformValueDefinition(
             )
         }
 
-        val bodyOrNull: BiaParser.BodyContext? = ctx.body()
+        val bodyOrNull: BiaParser.BlockBodyContext? = ctx.blockBody()
 
         fun transformDefinedFunction(): DefDeclarationB {
             val body = bodyOrNull ?: throw TypeCheckError("Non-external function needs to have a body")
@@ -163,7 +161,7 @@ fun transformValueDefinition(
                 typeVariables = typeVariables,
                 argumentListDeclaration = argumentListDeclaration,
                 explicitReturnType = explicitReturnType,
-                body = transformBody(body = body),
+                body = transformBlockBody(body = body),
             )
         }
 
@@ -370,8 +368,8 @@ fun transformExpression(
             )
         }
 
-        val body = transformBody(
-            body = ctx.body(),
+        val body = transformLambdaBody(
+            lambdaBody = ctx.lambdaBody(),
         )
 
         return LambdaExpressionB(
@@ -437,6 +435,25 @@ fun transformExpression(
         },
     )
 }.visit(expression)
+
+fun transformLambdaBody(
+    lambdaBody: BiaParser.LambdaBodyContext,
+): FunctionBodyB = object : BiaParserBaseVisitor<FunctionBodyB>() {
+    override fun visitExpressionAlt(
+        ctx: BiaParser.ExpressionAltContext,
+    ): FunctionBodyB = FunctionBodyB(
+        definitions = emptyList(),
+        returned = transformExpression(
+            expression = ctx.expression(),
+        ),
+    )
+
+    override fun visitBlockAlt(
+        ctx: BiaParser.BlockAltContext,
+    ): FunctionBodyB = transformBlockBody(
+        body = ctx.block().blockBody(),
+    )
+}.visit(lambdaBody)
 
 fun transformReferenceExpression(
     expression: BiaParser.ReferenceExpressionContext,

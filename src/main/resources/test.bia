@@ -1,49 +1,3 @@
-// TODO: Add test & fix "There's no type variable named A"
-// def <A> listId(l : List<A>) {
-//    return l
-// }
-
-val foo = (a : Number, b : Boolean) -> Number => {
-    return if (b) then a + 1 else a
-}
-
-// TODO: Add test & fix "There's no type variable named A"
-// def <A, B> map(l : List<A>, f : (e : A) : B): List<B> {
-//    return if size:L(l) == 0 then emptyList<B>() else (() => {
-//        val fst = first:L<A>(l)
-//        val tail = drop:L<A>(l, 1)
-//        val headOut = f(fst)
-//        val tailOut = map<A, B>(tail, f)
-//
-//        return cons:L<B>(headOut, tailOut)
-//    })()
-// }
-
-typealias Foo = {
-    foo1 : Number,
-    foo2 : Boolean
-}
-
-typealias Bar = {
-    bar1 : Number,
-    bar2 : Boolean
-}
-
-union Union1 =
-    Foo |
-    Bar
-
-def bar(obj : Union1) {
-    return if (obj is Foo) then (untag obj).foo1 else 0
-}
-
-def bar2(obj : Union1) {
-    return match obj {
-        case Foo => (untag obj).foo1 * 10
-        case Bar => (untag obj).bar1
-    }
-}
-
 typealias MyClass1 = {
     foo : Number,
     bar : Number,
@@ -66,21 +20,9 @@ val MyClass1:foo = (this : MyClass1) -> Number => {
     return this.foo
 }
 
-val MyClass1:mul = (this : MyClass1) => {
-    return (arg1 : Number, arg2 : Number) => {
-        return this.foo * arg1 * arg2
-    }
+val MyClass1:mul = (this : MyClass1) => (arg1 : Number, arg2 : Number) => {
+    return this.foo * arg1 * arg2
 }
-
-// val l1 = listOf(1, 2, 3, 4)
-
-// val l2 = listId<Number>(l1)
-
-// val l3 = map<Number, Boolean>(l1, (e : Number) => {
-//     return e % 2 == 0
-// })
-
-// val n = foo(1, true)
 
 val main = () => {
     // return bar2({

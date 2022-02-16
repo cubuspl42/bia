@@ -1,5 +1,12 @@
 package bia.parser
 
+import bia.model.ArgumentDeclaration
+import bia.model.ArgumentDeclarationB
+import bia.model.BasicArgumentListDeclaration
+import bia.model.BasicArgumentListDeclarationB
+import bia.model.BooleanType
+import bia.model.FunctionBodyB
+import bia.model.NumberType
 import bia.model.expressions.CallExpression
 import bia.model.expressions.LessThenExpression
 import bia.model.expressions.MatchBranch
@@ -8,6 +15,7 @@ import bia.model.expressions.ReferenceExpression
 import bia.model.expressions.TagExpression
 import bia.model.TypeVariable
 import bia.model.expressions.CallExpressionB
+import bia.model.expressions.LambdaExpressionB
 import bia.model.expressions.ReferenceExpressionB
 import bia.model.expressions.UntagExpression
 import bia.test_utils.parseExpression
@@ -215,6 +223,37 @@ internal class ParsingExpressionsTest {
             ),
             actual = parseExpressionB(
                 source = "callee :functionName (arg1, arg2)",
+            ),
+        )
+    }
+
+    @Test
+    fun parseExpressionLambda() {
+        assertEquals(
+            expected = LambdaExpressionB(
+                typeVariables = emptyList(),
+                argumentListDeclaration = BasicArgumentListDeclarationB(
+                    argumentDeclarations = listOf(
+                        ArgumentDeclarationB(
+                            givenName = "arg1",
+                            valueType = NumberType,
+                        ),
+                        ArgumentDeclarationB(
+                            givenName = "arg2",
+                            valueType = BooleanType,
+                        ),
+                    ),
+                ),
+                explicitReturnType = NumberType,
+                body = FunctionBodyB(
+                    definitions = emptyList(),
+                    returned = ReferenceExpressionB(
+                        referredName = "expr",
+                    ),
+                ),
+            ),
+            actual = parseExpressionB(
+                source = "(arg1 : Number, arg2 : Boolean) -> Number => expr",
             ),
         )
     }

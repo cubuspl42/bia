@@ -47,11 +47,16 @@ expression
     | FalseLiteral # falseLiteral
     | objectLiteral # objectLiteralAlt
     | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
-    | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow LeftBrace body RightBrace # lambdaExpression
+    | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow body=lambdaBody # lambdaExpression
     | expression Dot readFieldName=Identifier # objectFieldRead
     | expression Is tagName=Identifier # isExpression
     | expression Hash attachedTagName=Identifier # tagExpression
     | Untag expression # untagExpression
+    ;
+
+lambdaBody
+    : expression # expressionAlt
+    | block # blockAlt
     ;
 
 callableExpression
@@ -84,7 +89,7 @@ callArgumentList: (expression (Comma expression)*)? ;
 
 valueDeclaration : Val name=Identifier Assign initializer=expression ;
 
-functionDeclaration : External? Def genericArgumentListDeclaration? name=Identifier argumentListDeclaration (Colon explicitReturnType=typeExpression)? (LeftBrace body RightBrace)? ;
+functionDeclaration : External? Def genericArgumentListDeclaration? name=Identifier argumentListDeclaration (Colon explicitReturnType=typeExpression)? (LeftBrace blockBody RightBrace)? ;
 
 genericArgumentListDeclaration : Lt (generitArgumentDeclaration (Comma generitArgumentDeclaration)*)? Gt ;
 
@@ -103,7 +108,9 @@ declaration : valueDeclaration | functionDeclaration ;
 
 declarationList : declaration* ;
 
-body : declarationList return_ ;
+block : LeftBrace blockBody RightBrace ;
+
+blockBody : declarationList return_ ;
 
 return_ : Return expression ;
 

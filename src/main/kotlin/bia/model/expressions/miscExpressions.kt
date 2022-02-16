@@ -82,6 +82,8 @@ data class CallExpression(
     }
 
     override fun validate() {
+        callee.validate()
+
         val typeVariables = calleeType.typeVariables
 
         val definedTypeVariableCount = typeVariables.size
