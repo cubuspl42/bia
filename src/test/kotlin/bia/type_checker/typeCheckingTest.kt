@@ -9,16 +9,9 @@ import bia.model.DefDeclarationB
 import bia.model.FunctionBody
 import bia.model.FunctionBodyB
 import bia.model.FunctionType
-import bia.model.expressions.IfExpression
-import bia.model.expressions.IntLiteralExpression
-import bia.model.expressions.IsExpression
-import bia.model.expressions.MatchBranch
-import bia.model.expressions.MatchExpression
 import bia.model.NarrowUnionType
 import bia.model.NumberType
-import bia.model.expressions.ObjectFieldReadExpression
 import bia.model.ObjectType
-import bia.model.expressions.ReferenceExpression
 import bia.model.SmartCastDeclaration
 import bia.model.TaggedType
 import bia.model.Type
@@ -26,29 +19,31 @@ import bia.model.TypeReference
 import bia.model.TypeVariable
 import bia.model.TypeVariableB
 import bia.model.UnionAlternative
-import bia.model.ValDeclaration
+import bia.model.UnionAlternativeB
+import bia.model.UnionDeclaration
+import bia.model.UnionDeclarationB
 import bia.model.ValDeclarationB
-import bia.model.Value
-import bia.model.ValueDefinition
-import bia.model.ValueDefinitionB
-import bia.model.expressions.UntagExpression
 import bia.model.WideUnionType
 import bia.model.expressions.BooleanLiteralExpression
+import bia.model.expressions.IfExpression
+import bia.model.expressions.IntLiteralExpression
+import bia.model.expressions.IsExpression
 import bia.model.expressions.LambdaExpression
 import bia.model.expressions.LambdaExpressionB
 import bia.model.expressions.MatchBranchB
 import bia.model.expressions.MatchExpressionB
+import bia.model.expressions.ObjectFieldReadExpression
 import bia.model.expressions.ObjectFieldReadExpressionB
+import bia.model.expressions.ReferenceExpression
 import bia.model.expressions.ReferenceExpressionB
+import bia.model.expressions.UntagExpression
 import bia.model.expressions.UntagExpressionB
 import bia.model.isAssignableTo
 import bia.parser.ClosedDeclaration
 import bia.parser.ScopedDeclaration
 import bia.parser.StaticScope
-import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import kotlin.math.exp
 import kotlin.test.assertContains
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -506,6 +501,63 @@ internal class TypeCheckingTest {
         assertEquals(
             expected = NumberType,
             actual = functionBody.returned.type,
+        )
+    }
+
+    @Test
+    fun testUnionDeclaration() {
+        val (_, unionDeclaration) = UnionDeclarationB(
+            unionName = "Union1",
+            typeVariables = listOf(
+                TypeVariableB(givenName = "A"),
+                TypeVariableB(givenName = "B"),
+            ),
+            alternatives = listOf(
+                UnionAlternativeB(
+                    tagName = "A",
+                    type = TypeReference("A"),
+                ),
+                UnionAlternativeB(
+                    tagName = "B",
+                    type = TypeReference("B"),
+                ),
+                UnionAlternativeB(
+                    tagName = "Foo",
+                    type = TypeReference("Foo"),
+                ),
+            ),
+        ).build(
+            scope = StaticScope.empty.extendType(
+                name = "Foo",
+                type = NumberType,
+            ),
+        )
+
+        assertEquals(
+            expected = UnionDeclaration(
+                unionName = "Union1",
+                unionType = WideUnionType(
+                    typeVariables = listOf(
+                        TypeVariable(givenName = "A", id = 0),
+                        TypeVariable(givenName = "B", id = 0),
+                    ),
+                    alternatives = setOf(
+                        UnionAlternative(
+                            tagName = "A",
+                            type = TypeVariable(givenName = "A", id = 0),
+                        ),
+                        UnionAlternative(
+                            tagName = "B",
+                            type = TypeVariable(givenName = "B", id = 0),
+                        ),
+                        UnionAlternative(
+                            tagName = "Foo",
+                            type = NumberType,
+                        ),
+                    ),
+                ),
+            ),
+            actual = unionDeclaration,
         )
     }
 }

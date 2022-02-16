@@ -395,10 +395,19 @@ data class UnionDeclarationB(
             get() = unionDeclaration
     }
 
+    @Suppress("NAME_SHADOWING")
     override fun build(scope: StaticScope): Built {
+        val builtTypeVariables = buildTypeVariables(
+            scope = scope,
+            typeVariables = typeVariables,
+        )
+
+        val scope = builtTypeVariables.extendedScope
+
         val unionDeclaration = UnionDeclaration(
             unionName = unionName,
             unionType = WideUnionType(
+                typeVariables = builtTypeVariables.typeVariables,
                 alternatives = alternatives.map {
                     it.build(scope = scope)
                 }.toSet(),

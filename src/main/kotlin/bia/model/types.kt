@@ -17,7 +17,7 @@ interface TypeExpression {
 
 data class TypeReference(
     val referredName: String,
-): TypeExpression {
+) : TypeExpression {
     override fun build(scope: StaticScope): Type =
         scope.getType(givenName = referredName)
 }
@@ -206,7 +206,11 @@ data class ObjectTypeB(
 data class UnionAlternative(
     val tagName: String,
     val type: Type,
-)
+) {
+    fun resolveTypeVariables(mapping: TypeVariableMapping) = copy(
+        type = type.resolveTypeVariables(mapping = mapping)
+    )
+}
 
 sealed class UnionType : SpecificType {
     abstract val alternatives: Set<UnionAlternative>
@@ -224,8 +228,16 @@ sealed class UnionType : SpecificType {
 }
 
 data class WideUnionType(
+    val typeVariables: List<TypeVariable> = emptyList(),
     override val alternatives: Set<UnionAlternative>,
-) : UnionType()
+) : UnionType() {
+    override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
+        copy(
+            alternatives = alternatives.map {
+                it.resolveTypeVariables(mapping = mapping)
+            }.toSet(),
+        )
+}
 
 data class NarrowUnionType(
     override val alternatives: Set<UnionAlternative>,
