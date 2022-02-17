@@ -17,6 +17,7 @@ Is                      : 'is' ;
 Untag                   : 'untag' ;
 Match                   : 'match' ;
 Case                    : 'case' ;
+Singleton               : 'singleton' ;
 
 // Built-in types / type constructors
 NumberType              : 'Number' ;

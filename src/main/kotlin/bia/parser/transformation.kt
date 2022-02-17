@@ -14,6 +14,7 @@ import bia.model.NumberType
 import bia.model.ObjectTypeB
 import bia.model.ProgramB
 import bia.model.SequenceTypeB
+import bia.model.SingletonDeclarationB
 import bia.model.TopLevelDeclarationB
 import bia.model.TypeAliasDeclarationB
 import bia.model.TypeExpressionB
@@ -95,6 +96,12 @@ fun transformTopLevelDeclaration(
                 ),
             )
         },
+    )
+
+    override fun visitSingletonDeclarationAlt(
+        ctx: BiaParser.SingletonDeclarationAltContext,
+    ): TopLevelDeclarationB = SingletonDeclarationB(
+        singletonName = ctx.singletonDeclaration().name.text,
     )
 }.visit(topLevelDeclaration)
 

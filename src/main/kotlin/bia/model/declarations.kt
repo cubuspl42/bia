@@ -110,6 +110,7 @@ data class DefDeclaration(
 
     override fun validate() {
         validateFunction(
+            argumentListDeclaration = argumentListDeclaration,
             body = body,
             explicitReturnType = explicitReturnType,
         )
@@ -141,11 +142,11 @@ data class DefDeclarationB(
             typeVariables = typeVariables,
         )
 
-        val scope = builtTypeVariables.extendedScope
+        val scopeWithTypeVariables = builtTypeVariables.extendedScope
 
         val builtArgumentListDeclaration: ArgumentListDeclaration =
             argumentListDeclaration.build(
-                scope = scope,
+                scope = scopeWithTypeVariables,
             )
 
         val functionDeclaration = object {
@@ -155,14 +156,14 @@ data class DefDeclarationB(
                     typeVariables = builtTypeVariables.typeVariables,
                     argumentListDeclaration = builtArgumentListDeclaration,
                     explicitReturnType = explicitReturnType?.build(
-                        scope = scope,
+                        scope = scopeWithTypeVariables,
                     ),
                     buildDefinition = {
                         body?.let {
                             FunctionDefinition(
                                 body = it.build(
                                     scope = builtArgumentListDeclaration.extendScope(
-                                        scope = scope.extendOpen(
+                                        scope = scopeWithTypeVariables.extendOpen(
                                             name = givenName,
                                             declaration = functionDeclaration,
                                         ),
@@ -232,9 +233,12 @@ fun buildTypeVariables(
 }
 
 fun validateFunction(
+    argumentListDeclaration: ArgumentListDeclaration,
     body: FunctionBody?,
     explicitReturnType: Type?,
 ) {
+    argumentListDeclaration.validate()
+
     body?.validate()
 
     val inferredReturnType = body?.returned?.type
@@ -403,13 +407,13 @@ data class UnionDeclarationB(
                 typeVariables = typeArguments,
             )
 
-            val scope = builtTypeVariables.extendedScope
-
             buildResult(
                 scope = scope,
                 unionTypeAlike = UnionTypeConstructor(
                     typeArguments = builtTypeVariables.typeVariables,
-                    typeStructure = buildTypeStructure(scope = scope),
+                    typeStructure = buildTypeStructure(
+                        scope = builtTypeVariables.extendedScope,
+                    ),
                 )
             )
         } else buildResult(
@@ -440,6 +444,49 @@ data class UnionDeclarationB(
                 typeAlike = unionDeclaration.unionTypeAlike,
             ),
             unionDeclaration = unionDeclaration,
+        )
+    }
+}
+
+data class SingletonDeclaration(
+    override val givenName: String,
+    override val valueType: SingletonType,
+) : ValueDeclaration, TopLevelDeclaration {
+    override fun validate() {
+    }
+}
+
+data class SingletonDeclarationB(
+    val singletonName: String,
+) : TopLevelDeclarationB {
+    data class Built(
+        override val extendedScope: StaticScope,
+        val singletonDeclaration: SingletonDeclaration,
+    ) : TopLevelDeclarationB.Built {
+        override val topLevelDeclaration: TopLevelDeclaration
+            get() = singletonDeclaration
+    }
+
+    override fun build(scope: StaticScope): Built {
+        val singletonType = SingletonType(
+            singletonName = singletonName,
+        )
+
+        val singletonDeclaration = SingletonDeclaration(
+            givenName = singletonName,
+            valueType = singletonType,
+        )
+
+        return Built(
+            extendedScope = scope
+                .extendType(
+                    name = singletonName,
+                    typeAlike = singletonType,
+                ).extendClosed(
+                    name = singletonName,
+                    declaration = singletonDeclaration,
+                ),
+            singletonDeclaration = singletonDeclaration,
         )
     }
 }

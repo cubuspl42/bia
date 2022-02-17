@@ -269,7 +269,9 @@ sealed class UnionType : SpecificType, UnionTypeAlike {
     val tagNames: Set<String> by lazy { alternatives.map { it.tagName }.toSet() }
 
     override fun toPrettyString(): String =
-        alternatives.joinToString(separator = " | ") { it.tagName }
+        alternatives.joinToString(separator = " | ") {
+            "${it.type.toPrettyString()} #${it.tagName}"
+        }
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
         this
@@ -320,6 +322,15 @@ data class TaggedType(
             taggedType.isAssignableTo(alternative.type)
         } else false
     }
+}
+
+data class SingletonType(
+    val singletonName: String,
+) : SpecificType {
+    override fun toPrettyString(): String =
+        "singleton $singletonName"
+
+    override fun resolveTypeVariables(mapping: TypeVariableMapping): Type = this
 }
 
 private fun typeConstructorToPrettyString(

@@ -24,15 +24,15 @@ val MyClass1:mul = (this : MyClass1) => (arg1 : Number, arg2 : Number) => {
     return this.foo * arg1 * arg2
 }
 
-typealias None = Number
-
-typealias Pred = <A> (a : A) -> Boolean
+singleton None
 
 union Option = <A> A | None
 
-val foo = (oa : Option<A>) => match oa {
-    case A => 1
-    case None => 0
+typealias Pred = <A> (a : A) -> Boolean
+
+val foo = (oa : Option<Number>) => match oa {
+    case A => untag oa
+    case None => 123
 }
 
 val foo2 = (pred : Pred<Number>) -> Boolean =>
@@ -53,8 +53,5 @@ val main = () => {
         baz = true
     })
 
-    return {
-        a = foo2((n : Number) => n % 2 == 0),
-        b = foo3(<A> (a : A) => false)
-    }
+    return foo(456 #A)
 }

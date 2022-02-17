@@ -12,6 +12,9 @@ import bia.model.FunctionType
 import bia.model.NarrowUnionType
 import bia.model.NumberType
 import bia.model.ObjectType
+import bia.model.SingletonDeclaration
+import bia.model.SingletonDeclarationB
+import bia.model.SingletonType
 import bia.model.SmartCastDeclaration
 import bia.model.TaggedType
 import bia.model.Type
@@ -383,6 +386,18 @@ internal class TypeCheckingTest {
 
         val extendedScope = builtDefDeclaration.extendedScope
 
+        assertEquals(
+            expected = mapOf(
+                "id" to ClosedDeclaration(defDeclaration),
+            ),
+            actual = extendedScope.declarations,
+        )
+
+        assertEquals(
+            expected = emptyMap(),
+            actual = extendedScope.typeAlikes,
+        )
+
         assertContains(
             iterable = extendedScope.declarations.values,
             element = ClosedDeclaration(defDeclaration),
@@ -604,6 +619,65 @@ internal class TypeCheckingTest {
     }
 
     @Test
+    fun testGenericUnionInstantiation() {
+        val unionTypeConstructor = UnionTypeConstructor(
+            typeArguments = listOf(
+                TypeVariable(givenName = "A", id = 0),
+                TypeVariable(givenName = "B", id = 0),
+            ),
+            typeStructure = WideUnionType(
+                alternatives = setOf(
+                    UnionAlternative(
+                        tagName = "A",
+                        type = TypeVariable(givenName = "A", id = 0),
+                    ),
+                    UnionAlternative(
+                        tagName = "B",
+                        type = TypeVariable(givenName = "B", id = 0),
+                    ),
+                    UnionAlternative(
+                        tagName = "Number",
+                        type = NumberType,
+                    ),
+                ),
+            ),
+        )
+
+        val instantiatedType = TypeReference(
+            referredName = "Union1",
+            passedTypeArguments = listOf(
+                NumberType,
+                BooleanType,
+            ),
+        ).build(
+            scope = StaticScope.empty.extendType(
+                name = "Union1",
+                typeAlike = unionTypeConstructor,
+            )
+        )
+
+        assertEquals(
+            expected = WideUnionType(
+                alternatives = setOf(
+                    UnionAlternative(
+                        tagName = "A",
+                        type = NumberType
+                    ),
+                    UnionAlternative(
+                        tagName = "B",
+                        type = BooleanType,
+                    ),
+                    UnionAlternative(
+                        tagName = "Number",
+                        type = NumberType,
+                    ),
+                ),
+            ),
+            actual = instantiatedType,
+        )
+    }
+
+    @Test
     fun testArgumentDeclarationWithNonType() {
         assertThrows<TypeCheckError> {
             ArgumentDeclarationB(
@@ -634,6 +708,30 @@ internal class TypeCheckingTest {
                 )
             )
         }
+    }
+
+    @Test
+    fun testSingleton() {
+        val (extendedScope, singletonDeclaration) = SingletonDeclarationB(
+            singletonName = "Foo",
+        ).build(
+            scope = StaticScope.empty,
+        )
+
+        assertEquals(
+            expected = SingletonDeclaration(
+                givenName = "Foo",
+                valueType = SingletonType(
+                    singletonName = "Foo",
+                ),
+            ),
+            actual = singletonDeclaration,
+        )
+
+        assertContains(
+            iterable = extendedScope.declarations.values,
+            element = ClosedDeclaration(singletonDeclaration),
+        )
     }
 }
 

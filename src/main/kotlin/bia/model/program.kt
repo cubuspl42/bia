@@ -22,6 +22,10 @@ data class ProgramB(
                 scope = scope,
             )
 
+            if ("A" in builtTopLevelDeclaration.extendedScope.typeAlikes.keys) {
+                println("A!")
+            }
+
             listOf(builtTopLevelDeclaration.topLevelDeclaration) + buildTopLevelDeclarations(
                 scope = builtTopLevelDeclaration.extendedScope,
                 inputDeclarations = inputDeclarations.drop(1),

@@ -80,6 +80,13 @@ data class TaggedValue(
         get() = this
 }
 
+data class SingletonValue(
+    val name: String,
+) : Value {
+    override val value: Any
+        get() = name
+}
+
 fun Value.asNumberValue(message: String = "Expected a number, got"): NumberValue =
     this as? NumberValue ?: throw UnsupportedOperationException("$message: $this")
 

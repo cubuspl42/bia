@@ -146,7 +146,6 @@ fun validateTypeArguments(
     }
 }
 
-
 data class CallExpressionB(
     val callee: ExpressionB,
     val typeArguments: List<TypeExpressionB>,
@@ -229,6 +228,7 @@ data class LambdaExpression(
 
     override fun validate() {
         validateFunction(
+            argumentListDeclaration = argumentListDeclaration,
             body = body,
             explicitReturnType = explicitReturnType,
         )

@@ -6,6 +6,11 @@ import bia.model.FunctionBody
 import bia.model.DefDeclaration
 import bia.model.DefinedFunctionValue
 import bia.model.Program
+import bia.model.SingletonDeclaration
+import bia.model.SingletonValue
+import bia.model.TopLevelDeclaration
+import bia.model.TypeAliasDeclaration
+import bia.model.UnionDeclaration
 import bia.model.Value
 import bia.model.ValDeclaration
 import bia.model.ValueDefinition
@@ -13,10 +18,10 @@ import bia.model.ValueDefinition
 fun evaluateProgram(
     program: Program,
 ): DynamicScope {
-    val valueDefinitions = program.topLevelDeclarations.filterIsInstance<ValueDefinition>()
+    val topLevelDeclarations = program.topLevelDeclarations
 
-    val finalScope = valueDefinitions.fold(builtinScope) { scope, declaration ->
-        executeDeclaration(scope = scope, declaration = declaration)
+    val finalScope = topLevelDeclarations.fold(builtinScope) { scope, declaration ->
+        executeTopLevelDeclaration(scope = scope, declaration = declaration)
     }
 
     return finalScope
@@ -27,7 +32,7 @@ fun evaluateBody(
     body: FunctionBody,
 ): Value {
     val finalScope = body.definitions.fold(outerScope) { scope, declaration ->
-        executeDeclaration(scope = scope, declaration = declaration)
+        executeValueDefinition(scope = scope, declaration = declaration)
     }
 
     val returnedValue = evaluateExpression(
@@ -38,7 +43,23 @@ fun evaluateBody(
     return returnedValue
 }
 
-private fun executeDeclaration(
+private fun executeTopLevelDeclaration(
+    scope: DynamicScope,
+    declaration: TopLevelDeclaration,
+): DynamicScope = when (declaration) {
+    is SingletonDeclaration -> executeSingletonDeclaration(
+        scope = scope,
+        declaration = declaration,
+    )
+    is ValueDefinition -> executeValueDefinition(
+        scope = scope,
+        declaration = declaration,
+    )
+    is TypeAliasDeclaration -> scope
+    is UnionDeclaration -> scope
+}
+
+private fun executeValueDefinition(
     scope: DynamicScope,
     declaration: ValueDefinition,
 ): DynamicScope = when (declaration) {
@@ -85,6 +106,14 @@ private fun executeFunctionDeclaration(
         }
     }.resultScope else scope
 }
+
+private fun executeSingletonDeclaration(
+    scope: DynamicScope,
+    declaration: SingletonDeclaration,
+): DynamicScope = scope.extend(
+    name = declaration.givenName,
+    value = SingletonValue(declaration.givenName),
+)
 
 private fun evaluateExpression(
     scope: DynamicScope,

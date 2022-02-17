@@ -3,6 +3,7 @@ package bia.parser
 import bia.model.ValueDeclaration
 import bia.model.DefDeclaration
 import bia.model.NumberType
+import bia.model.SingletonDeclarationB
 import bia.model.TopLevelDeclarationB
 import bia.model.TypeReference
 import bia.model.TypeVariableB
@@ -83,6 +84,20 @@ internal class ParsingDeclarationsTest {
                         type = TypeReference("Foo"),
                     ),
                 ),
+            ),
+            actual = declaration,
+        )
+    }
+
+    @Test
+    fun parseSingletonDeclaration() {
+        val declaration = parseTopLevelDeclarationB(
+            source = "singleton Foo",
+        )
+
+        assertEquals(
+            expected = SingletonDeclarationB(
+                singletonName = "Foo",
             ),
             actual = declaration,
         )

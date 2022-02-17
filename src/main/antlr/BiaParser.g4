@@ -8,6 +8,7 @@ topLevelDeclaration
     : typeAlias # typealiasAlt
     | unionDeclaration # unionDeclarationAlt
     | declaration # declarationAlt
+    | singletonDeclaration # singletonDeclarationAlt
     ;
 
 typeExpression
@@ -107,6 +108,8 @@ typeAlias : Typealias aliasName=Identifier Assign aliasedType=typeExpression ;
 declaration : valueDeclaration | functionDeclaration ;
 
 declarationList : declaration* ;
+
+singletonDeclaration : Singleton name=Identifier ;
 
 block : LeftBrace blockBody RightBrace ;
 
