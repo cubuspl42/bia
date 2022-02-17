@@ -9,10 +9,12 @@ import bia.model.SmartCastDeclaration
 import bia.model.TaggedType
 import bia.model.TaggedValue
 import bia.model.Type
+import bia.model.TypeExpressionB
 import bia.model.UnionAlternative
 import bia.model.UnionType
 import bia.model.Value
 import bia.model.asTaggedValue
+import bia.model.isAssignableTo
 import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
@@ -87,6 +89,7 @@ data class MatchBranch(
 
 data class MatchExpression(
     val matchee: Expression,
+    val explicitType: Type?,
     val taggedBranches: List<MatchBranch>,
     val elseBranch: Expression?,
 ) : Expression {
@@ -99,13 +102,16 @@ data class MatchExpression(
     }
 
     override val type: Type by lazy {
-        val firstBranch = allBranches.first()
+        explicitType ?: run {
+            val firstBranch = allBranches.first()
+            val differingBranch = allBranches.firstOrNull { it.type != firstBranch.type }
 
-        if (allBranches.any { it.type != firstBranch.type }) {
-            throw TypeCheckError("Not all branches of a match expression have same types")
+            if (differingBranch != null) {
+                throw TypeCheckError("Not all branches of a match expression have same types (e.g. ${differingBranch.type.toPrettyString()} is not ${firstBranch.type.toPrettyString()})")
+            }
+
+            firstBranch.type
         }
-
-        firstBranch.type
     }
 
     override fun validate() {
@@ -127,6 +133,14 @@ data class MatchExpression(
 
         if (wrongTags.isNotEmpty()) {
             throw TypeCheckError("Not all tags are checked by match expression are declared by the matchee's union type. Wrong tags: $wrongTags")
+        }
+
+        if (explicitType != null) {
+            allBranches.forEach {
+                if (!it.type.isAssignableTo(explicitType)) {
+                    throw TypeCheckError("Inferred branch expression type (${it.type.toPrettyString()}) is not assignable to the explicit match type ${explicitType.toPrettyString()}")
+                }
+            }
         }
     }
 
@@ -160,11 +174,14 @@ data class MatchBranchB(
 
 data class MatchExpressionB(
     val matchee: ExpressionB,
+    val explicitType: TypeExpressionB?,
     val taggedBranches: List<MatchBranchB>,
     val elseBranch: ExpressionB?,
 ) : ExpressionB {
     override fun build(scope: StaticScope): MatchExpression {
         val matcheeExpression = matchee.build(scope = scope)
+
+        val explicitType = explicitType?.build(scope = scope)
 
         fun extendScopeWithNarrowedType(
             tagName: String,
@@ -199,6 +216,7 @@ data class MatchExpressionB(
 
         return MatchExpression(
             matchee = matcheeExpression,
+            explicitType = explicitType,
             taggedBranches = taggedBranches.map { matchBranch ->
                 matchBranch.build(
                     scope = extendScopeWithNarrowedType(

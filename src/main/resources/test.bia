@@ -26,12 +26,21 @@ val MyClass1:mul = (this : MyClass1) => (arg1 : Number, arg2 : Number) => {
 
 singleton None
 
-union Option = <A> A | None
+union Option = <A> A #Some | None
+
+val Option:map = <A, B> (
+    this : Option<A>
+) => (
+    f : (a : A) -> B
+) -> Option<B> => match this -> Option<B> {
+    case Some => f(untag this) #Some
+    case None => None # None
+}
 
 typealias Pred = <A> (a : A) -> Boolean
 
 val foo = (oa : Option<Number>) => match oa {
-    case A => untag oa
+    case Some => untag oa
     case None => 123
 }
 
@@ -53,5 +62,6 @@ val main = () => {
         baz = true
     })
 
-    return foo(456 #A)
+    return (456 #Some)
+        :Option:map<Number, Number>((n : Number) => n * 2)
 }

@@ -377,13 +377,24 @@ data class UnionDeclaration(
 }
 
 data class UnionAlternativeB(
-    val tagName: String,
-    val type: TypeExpressionB,
+    val explicitTagName: String?,
+    val typeExpression: TypeExpressionB,
 ) {
-    fun build(scope: StaticScope) = UnionAlternative(
-        tagName = tagName,
-        type = type.build(scope),
-    )
+    fun build(scope: StaticScope): UnionAlternative {
+        fun buildImplicitTagName(): String {
+            val typeReference = (typeExpression as? TypeReference)
+                ?: throw TypeCheckError("Union alternative with non-reference type expression has no explicit tag")
+
+            return typeReference.referredName
+        }
+
+        val tagName = explicitTagName ?: buildImplicitTagName()
+
+        return UnionAlternative(
+            tagName = tagName,
+            type = typeExpression.build(scope),
+        )
+    }
 }
 
 data class UnionDeclarationB(

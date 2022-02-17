@@ -63,7 +63,7 @@ lambdaBody
 callableExpression
     : LeftParen expression RightParen # parenExpression
     | callee=callableExpression typeExpressionList? LeftParen callArgumentList RightParen # callExpression
-    | self=callableExpression Colon referredCalleeName=Identifier # postfixCallExpression
+    | self=callableExpression Colon referredCalleeName=Identifier typeExpressionList? # postfixCallExpression
     | referredName=Identifier # referenceExpression
     | matchExpression # matchExpressionAlt
     ;
@@ -75,7 +75,7 @@ objectLiteralEntry
     : assignedFieldName=Identifier Assign initializer=expression ;
 
 matchExpression
-    : Match matchee=expression LeftBrace matchTaggedBranch+ matchElseBranch? RightBrace ;
+    : Match matchee=expression (ThinArrow explicitType=typeExpression)? LeftBrace matchTaggedBranch+ matchElseBranch? RightBrace ;
 
 matchTaggedBranch
     : Case tagName=Identifier FatArrow branch=expression ;
@@ -119,4 +119,4 @@ return_ : Return expression ;
 
 unionDeclaration : Union givenName=Identifier Assign genericArgumentListDeclaration? unionEntryDeclaration (Pipe unionEntryDeclaration)* ;
 
-unionEntryDeclaration : typeReference ;
+unionEntryDeclaration : typeReference (Hash explicitTagName=Identifier)? ;

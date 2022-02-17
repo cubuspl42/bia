@@ -527,12 +527,12 @@ internal class TypeCheckingTest {
             typeArguments = emptyList(),
             alternatives = listOf(
                 UnionAlternativeB(
-                    tagName = "Foo",
-                    type = TypeReference("Foo"),
+                    explicitTagName = "Foo",
+                    typeExpression = TypeReference("Foo"),
                 ),
                 UnionAlternativeB(
-                    tagName = "Boolean",
-                    type = BooleanType,
+                    explicitTagName = "Boolean",
+                    typeExpression = BooleanType,
                 ),
             ),
         ).build(
@@ -572,16 +572,16 @@ internal class TypeCheckingTest {
             ),
             alternatives = listOf(
                 UnionAlternativeB(
-                    tagName = "A",
-                    type = TypeReference("A"),
+                    explicitTagName = "A",
+                    typeExpression = TypeReference("A"),
                 ),
                 UnionAlternativeB(
-                    tagName = "B",
-                    type = TypeReference("B"),
+                    explicitTagName = "B",
+                    typeExpression = TypeReference("B"),
                 ),
                 UnionAlternativeB(
-                    tagName = "Number",
-                    type = NumberType,
+                    explicitTagName = "Number",
+                    typeExpression = NumberType,
                 ),
             ),
         ).build(

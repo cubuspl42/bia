@@ -90,8 +90,8 @@ fun transformTopLevelDeclaration(
         ),
         alternatives = ctx.unionEntryDeclaration().map {
             UnionAlternativeB(
-                tagName = it.typeReference().text,
-                type = transformTypeReference(
+                explicitTagName = it.explicitTagName?.text,
+                typeExpression = transformTypeReference(
                     typeReference = it.typeReference(),
                 ),
             )
@@ -245,11 +245,9 @@ fun transformExpression(
             callee = transformExpression(
                 expression = ctx.callee,
             ),
-            typeArguments = ctx.typeExpressionList()?.typeExpression()?.map {
-                transformTypeExpression(
-                    typeExpression = it,
-                )
-            } ?: emptyList(),
+            typeArguments = transformTypeExpressionList(
+                typeExpressionList = ctx.typeExpressionList(),
+            ),
             arguments = ctx.callArgumentList().expression().map {
                 transformExpression(
                     expression = it,
@@ -263,7 +261,9 @@ fun transformExpression(
         callee = ReferenceExpressionB(
             referredName = ctx.referredCalleeName.text,
         ),
-        typeArguments = emptyList(),
+        typeArguments = transformTypeExpressionList(
+            typeExpressionList = ctx.typeExpressionList(),
+        ),
         arguments = listOf(
             transformExpression(expression = ctx.self),
         ),
@@ -430,6 +430,9 @@ fun transformExpression(
         matchee = transformExpression(
             expression = ctx.matchee,
         ),
+        explicitType = ctx.explicitType?.let {
+            transformTypeExpression(typeExpression = it)
+        },
         taggedBranches = ctx.matchTaggedBranch().map {
             MatchBranchB(
                 requiredTagName = it.tagName.text,
@@ -474,6 +477,14 @@ fun transformReferenceExpression(
         referredName = referredName,
     )
 }
+
+fun transformTypeExpressionList(
+    typeExpressionList: BiaParser.TypeExpressionListContext?,
+): List<TypeExpressionB> = typeExpressionList?.typeExpression()?.map {
+    transformTypeExpression(
+        typeExpression = it,
+    )
+} ?: emptyList()
 
 fun transformTypeExpression(
     typeExpression: BiaParser.TypeExpressionContext,
@@ -528,11 +539,11 @@ fun transformTypeExpression(
 
 private fun transformTypeReference(
     typeReference: BiaParser.TypeReferenceContext,
-): TypeExpressionB = TypeReference(
+): TypeReference = TypeReference(
     referredName = typeReference.name.text,
-    passedTypeArguments = typeReference.typeExpressionList()?.typeExpression()?.map {
-        transformTypeExpression(typeExpression = it)
-    } ?: emptyList()
+    passedTypeArguments = transformTypeExpressionList(
+        typeExpressionList = typeReference.typeExpressionList(),
+    ),
 )
 
 fun transformTypeConstructor(

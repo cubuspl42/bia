@@ -317,7 +317,7 @@ data class TaggedType(
     override fun isAssignableDirectlyTo(other: Type): Boolean {
         return if (other is UnionType) {
             val alternative = other.alternatives.singleOrNull { it.tagName == attachedTagName }
-                ?: throw TypeCheckError("Union type $other doesn't have an alternative tagged '$attachedTagName'")
+                ?: throw TypeCheckError("Union type ${other.toPrettyString()} doesn't have an alternative tagged '$attachedTagName'")
 
             taggedType.isAssignableTo(alternative.type)
         } else false

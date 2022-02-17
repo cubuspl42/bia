@@ -35,7 +35,7 @@ internal class ParsingDeclarationsTest {
     @Test
     fun parseBasicUnionDeclaration() {
         val declaration = parseTopLevelDeclarationB(
-            source = "union Union1 = Foo | Bar",
+            source = "union Union1 = Foo # Tag | Bar",
         )
 
         assertEquals(
@@ -44,12 +44,12 @@ internal class ParsingDeclarationsTest {
                 typeArguments = emptyList(),
                 alternatives = listOf(
                     UnionAlternativeB(
-                        tagName = "Foo",
-                        type = TypeReference("Foo"),
+                        explicitTagName = "Tag",
+                        typeExpression = TypeReference("Foo"),
                     ),
                     UnionAlternativeB(
-                        tagName = "Bar",
-                        type = TypeReference("Bar"),
+                        explicitTagName = null,
+                        typeExpression = TypeReference("Bar"),
                     ),
                 ),
             ),
@@ -72,16 +72,16 @@ internal class ParsingDeclarationsTest {
                 ),
                 alternatives = listOf(
                     UnionAlternativeB(
-                        tagName = "A",
-                        type = TypeReference("A"),
+                        explicitTagName = "A",
+                        typeExpression = TypeReference("A"),
                     ),
                     UnionAlternativeB(
-                        tagName = "B",
-                        type = TypeReference("B"),
+                        explicitTagName = "B",
+                        typeExpression = TypeReference("B"),
                     ),
                     UnionAlternativeB(
-                        tagName = "Foo",
-                        type = TypeReference("Foo"),
+                        explicitTagName = "Foo",
+                        typeExpression = TypeReference("Foo"),
                     ),
                 ),
             ),
