@@ -3,6 +3,7 @@ package bia.parser
 import bia.model.ValueDeclaration
 import bia.model.DefDeclaration
 import bia.model.Type
+import bia.model.TypeAlike
 import bia.model.TypeVariable
 import bia.type_checker.TypeCheckError
 
@@ -30,56 +31,51 @@ abstract class StaticScope {
     companion object {
         fun of(
             declarations: Map<String, ScopedDeclaration>,
-            typeVariables: Map<String, List<Type>>,
+            typeAlikes: Map<String, List<TypeAlike>>,
         ): StaticScope = SimpleStaticScope(
             declarations = declarations,
-            types = typeVariables,
+            typeAlikes = typeAlikes,
         )
 
         val empty = of(
             declarations = emptyMap(),
-            typeVariables = emptyMap(),
+            typeAlikes = emptyMap(),
         )
     }
 
     abstract val declarations: Map<String, ScopedDeclaration>
 
-    abstract val types: Map<String, List<Type>>
+    abstract val typeAlikes: Map<String, List<TypeAlike>>
 
     fun extendClosed(name: String, declaration: ValueDeclaration) = StaticScope.of(
         declarations = declarations + (name to ClosedDeclaration(declaration)),
-        typeVariables = types,
+        typeAlikes = typeAlikes,
     )
 
     fun extendClosed(namedDeclarations: List<Pair<String, ValueDeclaration>>) = StaticScope.of(
         declarations = declarations + namedDeclarations.associate { (name, declaration) ->
             name to ClosedDeclaration(declaration)
         },
-        typeVariables = types,
+        typeAlikes = typeAlikes,
     )
 
     fun extendOpen(name: String, declaration: DefDeclaration) = StaticScope.of(
         declarations = declarations + (name to OpenFunctionDeclaration(declaration)),
-        typeVariables = types,
+        typeAlikes = typeAlikes,
     )
 
-    fun extendScoped(name: String, declaration: ScopedDeclaration) = StaticScope.of(
-        declarations = declarations + (name to declaration),
-        typeVariables = types,
-    )
-
-    fun extendType(name: String, type: Type): StaticScope {
-        val typesWithGivenName = types
+    fun extendType(name: String, typeAlike: TypeAlike): StaticScope {
+        val typesWithGivenName = typeAlikes
             .getOrElse(name) { emptyList() }
 
         return of(
             declarations = declarations,
-            typeVariables = types + (name to (typesWithGivenName + type)),
+            typeAlikes = typeAlikes + (name to (typesWithGivenName + typeAlike)),
         )
     }
 
     fun allocateTypeVariable(givenName: String): AllocateTypeVariableResult {
-        val typesWithGivenName = types
+        val typesWithGivenName = typeAlikes
             .getOrElse(givenName) { emptyList() }
 
         val allocatedVariable = TypeVariable(
@@ -89,18 +85,18 @@ abstract class StaticScope {
 
         return AllocateTypeVariableResult(
             allocatedVariable = allocatedVariable,
-            newScope = extendType(name = givenName, type = allocatedVariable),
+            newScope = extendType(name = givenName, typeAlike = allocatedVariable),
         )
     }
 
     fun getScopedDeclaration(name: String): ScopedDeclaration? = declarations[name]
 
-    fun getType(givenName: String): Type {
-        return types[givenName]?.last() ?: throw TypeCheckError("There's no type variable named $givenName")
+    fun getTypeAlike(givenName: String): TypeAlike {
+        return typeAlikes[givenName]?.last() ?: throw TypeCheckError("There's no type or type constructor named $givenName")
     }
 }
 
 data class SimpleStaticScope(
     override val declarations: Map<String, ScopedDeclaration>,
-    override val types: Map<String, List<Type>>,
+    override val typeAlikes: Map<String, List<TypeAlike>>,
 ) : StaticScope()

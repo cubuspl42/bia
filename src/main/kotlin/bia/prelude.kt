@@ -18,7 +18,7 @@ data class Prelude(
             val result = buildValueDefinitions(
                 scope = StaticScope.of(
                     declarations = emptyMap(),
-                    typeVariables = emptyMap(),
+                    typeAlikes = emptyMap(),
                 ),
                 definitions = transformDeclarations(
                     inputDeclarations = parser.declarationList().declaration(),

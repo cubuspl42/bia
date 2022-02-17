@@ -10,7 +10,7 @@ import bia.model.FunctionBodyB
 import bia.model.FunctionType
 import bia.model.ObjectType
 import bia.model.Type
-import bia.model.TypeExpression
+import bia.model.TypeExpressionB
 import bia.model.TypeVariable
 import bia.model.TypeVariableB
 import bia.model.TypeVariableMapping
@@ -68,10 +68,9 @@ data class CallExpression(
     }
 
     private val resolvedCalleeType: FunctionType by lazy {
-        val typeVariableMapping = TypeVariableMapping(
-            mapping = typeArguments.zip(calleeType.typeVariables) { typeArgument, typeVariable ->
-                typeVariable to typeArgument
-            }.toMap(),
+        val typeVariableMapping = buildTypeVariableMapping(
+            typeArguments = calleeType.typeArguments,
+            passedTypeArguments = typeArguments,
         )
 
         calleeType.resolveTypeVariables(mapping = typeVariableMapping)
@@ -84,18 +83,15 @@ data class CallExpression(
     override fun validate() {
         callee.validate()
 
-        val typeVariables = calleeType.typeVariables
-
-        val definedTypeVariableCount = typeVariables.size
-        val passedTypeArgumentCount = typeArguments.size
-
         val functionName = if (callee is ReferenceExpression) callee.referredName else "(unnamed)"
 
-        if (passedTypeArgumentCount != definedTypeVariableCount) {
-            throw TypeCheckError(
-                "Function $functionName was defined with $definedTypeVariableCount type variables, $passedTypeArgumentCount passed",
-            )
-        }
+        validateTypeArguments(
+            typeArguments = calleeType.typeArguments,
+            passedTypeArguments = typeArguments,
+            message = { definedTypeVariableCount, passedTypeArgumentCount ->
+                "Function $functionName was defined with $definedTypeVariableCount type variables, $passedTypeArgumentCount passed"
+            }
+        )
 
         resolvedCalleeType.argumentListDeclaration.validateCall(
             functionName = functionName,
@@ -120,9 +116,40 @@ data class CallExpression(
     }
 }
 
+fun buildTypeVariableMapping(
+    typeArguments: List<TypeVariable>,
+    passedTypeArguments: List<Type>,
+): TypeVariableMapping {
+    if (typeArguments.size != passedTypeArguments.size) {
+        throw TypeCheckError("${typeArguments.size} type arguments declared, ${passedTypeArguments.size} passed")
+    }
+
+    return TypeVariableMapping(
+        mapping = passedTypeArguments.zip(typeArguments) { passedTypeArgument, typeArgument ->
+            typeArgument to passedTypeArgument
+        }.toMap(),
+    )
+}
+
+fun validateTypeArguments(
+    typeArguments: List<TypeVariable>,
+    passedTypeArguments: List<Type>,
+    message: (definedTypeVariableCount: Int, passedTypeArgumentCount: Int) -> String,
+) {
+    val definedTypeVariableCount = typeArguments.size
+    val passedTypeArgumentCount = passedTypeArguments.size
+
+    if (passedTypeArgumentCount != definedTypeVariableCount) {
+        throw TypeCheckError(
+            message(definedTypeVariableCount, passedTypeArgumentCount),
+        )
+    }
+}
+
+
 data class CallExpressionB(
     val callee: ExpressionB,
-    val typeArguments: List<TypeExpression>,
+    val typeArguments: List<TypeExpressionB>,
     val arguments: List<ExpressionB>,
 ) : ExpressionB {
     override fun build(scope: StaticScope): Expression = CallExpression(
@@ -190,7 +217,7 @@ data class LambdaExpression(
 ) : Expression {
     override val type: Type by lazy {
         FunctionType(
-            typeVariables = typeVariables,
+            typeArguments = typeVariables,
             argumentListDeclaration = argumentListDeclaration,
             returnType = explicitReturnType ?: body.returned.type,
         )
@@ -217,7 +244,7 @@ data class LambdaExpression(
 data class LambdaExpressionB(
     val typeVariables: List<TypeVariableB>,
     val argumentListDeclaration: ArgumentListDeclarationB,
-    val explicitReturnType: TypeExpression?,
+    val explicitReturnType: TypeExpressionB?,
     val body: FunctionBodyB,
 ) : ExpressionB {
     @Suppress("NAME_SHADOWING")

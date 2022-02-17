@@ -139,25 +139,22 @@ class ExpressionsTest {
 
     @Test
     fun testIs() {
-        val unionDeclaration = UnionDeclaration(
-            unionName = "Union1",
-            unionType = WideUnionType(
-                alternatives = setOf(
-                    UnionAlternative(
-                        tagName = "Tag1",
-                        type = NumberType,
-                    ),
-                    UnionAlternative(
-                        tagName = "Tag2",
-                        type = BooleanType,
-                    ),
+        val unionType = WideUnionType(
+            alternatives = setOf(
+                UnionAlternative(
+                    tagName = "Tag1",
+                    type = NumberType,
+                ),
+                UnionAlternative(
+                    tagName = "Tag2",
+                    type = BooleanType,
                 ),
             ),
         )
 
         val argumentDeclaration = ArgumentDeclaration(
             givenName = "arg1",
-            valueType = unionDeclaration.unionType,
+            valueType = unionType,
         )
 
         val expression = parseExpression(

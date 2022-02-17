@@ -148,7 +148,7 @@ data class VarargArgumentListDeclaration(
 
 data class VarargArgumentListDeclarationB(
     val givenName: String,
-    val type: TypeExpression,
+    val type: TypeExpressionB,
 ) : ArgumentListDeclarationB {
     override fun build(scope: StaticScope): VarargArgumentListDeclaration =
         VarargArgumentListDeclaration(

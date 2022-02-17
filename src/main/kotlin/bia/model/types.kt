@@ -1,9 +1,19 @@
 package bia.model
 
+import bia.model.expressions.buildTypeVariableMapping
 import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
-sealed interface Type {
+// An entity that resides in the type namespace
+sealed interface TypeAlike
+
+interface TypeConstructor : TypeAlike {
+    val typeArguments: List<TypeVariable>
+
+    fun construct(passedTypeArguments: List<Type>): Type
+}
+
+sealed interface Type : TypeAlike {
     fun toPrettyString(): String
 
     fun isAssignableDirectlyTo(other: Type): Boolean = false
@@ -11,15 +21,45 @@ sealed interface Type {
     fun resolveTypeVariables(mapping: TypeVariableMapping): Type
 }
 
-interface TypeExpression {
+data class UnionTypeConstructor(
+    override val typeArguments: List<TypeVariable>,
+    private val typeStructure: WideUnionType,
+) : TypeConstructor, UnionTypeAlike {
+    override fun construct(passedTypeArguments: List<Type>): WideUnionType {
+        val typeVariableMapping = buildTypeVariableMapping(
+            typeArguments = typeArguments,
+            passedTypeArguments = passedTypeArguments,
+        )
+
+        return typeStructure.resolveTypeVariables(mapping = typeVariableMapping)
+    }
+}
+
+interface TypeExpressionB {
     fun build(scope: StaticScope): Type
 }
 
 data class TypeReference(
     val referredName: String,
-) : TypeExpression {
-    override fun build(scope: StaticScope): Type =
-        scope.getType(givenName = referredName)
+    val passedTypeArguments: List<TypeExpressionB> = emptyList(),
+) : TypeExpressionB {
+    override fun build(scope: StaticScope): Type {
+        val typeAlike = scope.getTypeAlike(givenName = referredName)
+
+        return if (passedTypeArguments.isEmpty()) {
+            (typeAlike as? Type)
+                ?: throw TypeCheckError("$referredName does not refer to an ordinary type (it's a type constructor), but no type arguments were provided")
+        } else {
+            val typeConstructor = (typeAlike as? TypeConstructor)
+                ?: throw TypeCheckError("$referredName does not refer to a type constructor, but type arguments were provided")
+
+            typeConstructor.construct(
+                passedTypeArguments = passedTypeArguments.map {
+                    it.build(scope = scope)
+                },
+            )
+        }
+    }
 }
 
 data class TypeVariableMapping(
@@ -57,7 +97,7 @@ fun Type.isAssignableTo(other: Type): Boolean =
 //fun Type.isAssignableToUnion(union: UnionType): Boolean =
 //    union.alternatives.count { this.isAssignableTo(it.type) } == 1
 
-object NumberType : SpecificType, TypeExpression {
+object NumberType : SpecificType, TypeExpressionB {
     override fun toPrettyString(): String = "Number"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): SpecificType =
@@ -66,7 +106,7 @@ object NumberType : SpecificType, TypeExpression {
     override fun build(scope: StaticScope) = this
 }
 
-object BooleanType : SpecificType, TypeExpression {
+object BooleanType : SpecificType, TypeExpressionB {
     override fun toPrettyString(): String = "Boolean"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): SpecificType = this
@@ -86,7 +126,7 @@ data class ListType(val elementType: Type) : SpecificType {
         )
 }
 
-data class ListTypeB(val elementType: TypeExpression) : TypeExpression {
+data class ListTypeB(val elementType: TypeExpressionB) : TypeExpressionB {
     override fun build(scope: StaticScope) = ListType(
         elementType = elementType.build(scope),
     )
@@ -104,7 +144,7 @@ data class SequenceType(val elementType: Type) : SpecificType {
         )
 }
 
-data class SequenceTypeB(val elementType: TypeExpression) : TypeExpression {
+data class SequenceTypeB(val elementType: TypeExpressionB) : TypeExpressionB {
     override fun build(scope: StaticScope) = SequenceType(
         elementType = elementType.build(scope),
     )
@@ -120,13 +160,13 @@ data class NullableType(val baseType: Type) : SpecificType {
         )
 }
 
-data class NullableTypeB(val baseType: TypeExpression) : TypeExpression {
+data class NullableTypeB(val baseType: TypeExpressionB) : TypeExpressionB {
     override fun build(scope: StaticScope) = SequenceType(
         elementType = baseType.build(scope),
     )
 }
 
-object BigIntegerType : SpecificType, TypeExpression {
+object BigIntegerType : SpecificType, TypeExpressionB {
     override fun toPrettyString(): String = "BigInteger"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): SpecificType = this
@@ -135,10 +175,10 @@ object BigIntegerType : SpecificType, TypeExpression {
 }
 
 data class FunctionType(
-    val typeVariables: List<TypeVariable>,
+    override val typeArguments: List<TypeVariable>,
     val argumentListDeclaration: ArgumentListDeclaration,
     val returnType: Type,
-) : SpecificType {
+) : SpecificType, TypeConstructor {
     override fun isAssignableDirectlyTo(other: Type): Boolean = if (other is FunctionType) {
         argumentListDeclaration.isAssignableDirectlyTo(other.argumentListDeclaration) &&
                 returnType.isAssignableTo(other.returnType)
@@ -150,25 +190,34 @@ data class FunctionType(
     }
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): FunctionType = FunctionType(
-        typeVariables = emptyList(),
+        typeArguments = emptyList(),
         argumentListDeclaration = argumentListDeclaration.resolveTypeVariables(mapping = mapping),
         returnType = returnType.resolveTypeVariables(mapping = mapping),
     )
+
+    override fun construct(passedTypeArguments: List<Type>): Type {
+        val typeVariableMapping = buildTypeVariableMapping(
+            typeArguments = typeArguments,
+            passedTypeArguments = passedTypeArguments,
+        )
+
+        return resolveTypeVariables(mapping = typeVariableMapping)
+    }
 }
 
 data class FunctionTypeB(
-    val typeVariables: List<TypeVariableB>,
+    val typeArguments: List<TypeVariableB>,
     val argumentListDeclaration: ArgumentListDeclarationB,
-    val returnType: TypeExpression,
-) : TypeExpression {
+    val returnType: TypeExpressionB,
+) : TypeExpressionB {
     override fun build(scope: StaticScope): Type {
         val builtTypeVariables = buildTypeVariables(
             scope = scope,
-            typeVariables = typeVariables,
+            typeVariables = typeArguments,
         )
 
         return FunctionType(
-            typeVariables = builtTypeVariables.typeVariables,
+            typeArguments = builtTypeVariables.typeVariables,
             argumentListDeclaration = argumentListDeclaration.build(
                 scope = builtTypeVariables.extendedScope,
             ),
@@ -194,8 +243,8 @@ data class ObjectType(
 }
 
 data class ObjectTypeB(
-    val entries: Map<String, TypeExpression>,
-) : TypeExpression {
+    val entries: Map<String, TypeExpressionB>,
+) : TypeExpressionB {
     override fun build(scope: StaticScope) = ObjectType(
         entries = entries.mapValues { (_, entryType) ->
             entryType.build(scope = scope)
@@ -212,7 +261,9 @@ data class UnionAlternative(
     )
 }
 
-sealed class UnionType : SpecificType {
+sealed interface UnionTypeAlike : TypeAlike
+
+sealed class UnionType : SpecificType, UnionTypeAlike {
     abstract val alternatives: Set<UnionAlternative>
 
     val tagNames: Set<String> by lazy { alternatives.map { it.tagName }.toSet() }
@@ -228,10 +279,9 @@ sealed class UnionType : SpecificType {
 }
 
 data class WideUnionType(
-    val typeVariables: List<TypeVariable> = emptyList(),
     override val alternatives: Set<UnionAlternative>,
 ) : UnionType() {
-    override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
+    override fun resolveTypeVariables(mapping: TypeVariableMapping): WideUnionType =
         copy(
             alternatives = alternatives.map {
                 it.resolveTypeVariables(mapping = mapping)

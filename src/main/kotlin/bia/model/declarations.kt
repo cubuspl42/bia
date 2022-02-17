@@ -91,7 +91,7 @@ data class DefDeclaration(
 
     val explicitType: FunctionType? = explicitReturnType?.let {
         FunctionType(
-            typeVariables = typeVariables,
+            typeArguments = typeVariables,
             argumentListDeclaration = argumentListDeclaration,
             returnType = it,
         )
@@ -102,7 +102,7 @@ data class DefDeclaration(
         ?: throw RuntimeException("Could not determine function return type")
 
         explicitType ?: FunctionType(
-            typeVariables = typeVariables,
+            typeArguments = typeVariables,
             argumentListDeclaration = argumentListDeclaration,
             returnType = returnType,
         )
@@ -120,7 +120,7 @@ data class DefDeclarationB(
     val givenName: String,
     val typeVariables: List<TypeVariableB>,
     val argumentListDeclaration: ArgumentListDeclarationB,
-    val explicitReturnType: TypeExpression?,
+    val explicitReturnType: TypeExpressionB?,
     val body: FunctionBodyB?,
 ) : TopLevelDeclarationB, ValueDefinitionB {
     data class Built(
@@ -257,7 +257,7 @@ data class ArgumentDeclaration(
 
 data class ArgumentDeclarationB(
     val givenName: String,
-    val valueType: TypeExpression,
+    val valueType: TypeExpressionB,
 ) {
     fun build(scope: StaticScope) = ArgumentDeclaration(
         givenName = givenName,
@@ -338,7 +338,7 @@ data class TypeAliasDeclaration(
 
 data class TypeAliasDeclarationB(
     val aliasName: String,
-    val aliasedType: TypeExpression,
+    val aliasedType: TypeExpressionB,
 ) : TopLevelDeclarationB {
     data class Built(
         override val extendedScope: StaticScope,
@@ -357,7 +357,7 @@ data class TypeAliasDeclarationB(
         return Built(
             extendedScope = scope.extendType(
                 name = aliasName,
-                type = typeAliasDeclaration.aliasedType,
+                typeAlike = typeAliasDeclaration.aliasedType,
             ),
             typeAliasDeclaration = typeAliasDeclaration,
         )
@@ -366,7 +366,7 @@ data class TypeAliasDeclarationB(
 
 data class UnionDeclaration(
     val unionName: String,
-    val unionType: UnionType,
+    val unionTypeAlike: UnionTypeAlike,
 ) : TopLevelDeclaration {
     override fun validate() {
     }
@@ -374,7 +374,7 @@ data class UnionDeclaration(
 
 data class UnionAlternativeB(
     val tagName: String,
-    val type: TypeExpression,
+    val type: TypeExpressionB,
 ) {
     fun build(scope: StaticScope) = UnionAlternative(
         tagName = tagName,
@@ -384,7 +384,7 @@ data class UnionAlternativeB(
 
 data class UnionDeclarationB(
     val unionName: String,
-    val typeVariables: List<TypeVariableB>,
+    val typeArguments: List<TypeVariableB>,
     val alternatives: List<UnionAlternativeB>,
 ) : TopLevelDeclarationB {
     data class Built(
@@ -396,28 +396,48 @@ data class UnionDeclarationB(
     }
 
     @Suppress("NAME_SHADOWING")
-    override fun build(scope: StaticScope): Built {
-        val builtTypeVariables = buildTypeVariables(
+    override fun build(scope: StaticScope): Built =
+        if (typeArguments.isNotEmpty()) {
+            val builtTypeVariables = buildTypeVariables(
+                scope = scope,
+                typeVariables = typeArguments,
+            )
+
+            val scope = builtTypeVariables.extendedScope
+
+            buildResult(
+                scope = scope,
+                unionTypeAlike = UnionTypeConstructor(
+                    typeArguments = builtTypeVariables.typeVariables,
+                    typeStructure = buildTypeStructure(scope = scope),
+                )
+            )
+        } else buildResult(
             scope = scope,
-            typeVariables = typeVariables,
+            unionTypeAlike = buildTypeStructure(scope = scope),
         )
 
-        val scope = builtTypeVariables.extendedScope
+    private fun buildTypeStructure(
+        scope: StaticScope,
+    ): WideUnionType = WideUnionType(
+        alternatives = alternatives.map {
+            it.build(scope = scope)
+        }.toSet(),
+    )
 
+    private fun buildResult(
+        scope: StaticScope,
+        unionTypeAlike: UnionTypeAlike,
+    ): Built {
         val unionDeclaration = UnionDeclaration(
             unionName = unionName,
-            unionType = WideUnionType(
-                typeVariables = builtTypeVariables.typeVariables,
-                alternatives = alternatives.map {
-                    it.build(scope = scope)
-                }.toSet(),
-            ),
+            unionTypeAlike = unionTypeAlike,
         )
 
         return Built(
             extendedScope = scope.extendType(
                 name = unionName,
-                type = unionDeclaration.unionType,
+                typeAlike = unionDeclaration.unionTypeAlike,
             ),
             unionDeclaration = unionDeclaration,
         )

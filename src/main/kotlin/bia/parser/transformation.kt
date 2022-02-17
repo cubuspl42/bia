@@ -16,7 +16,7 @@ import bia.model.ProgramB
 import bia.model.SequenceTypeB
 import bia.model.TopLevelDeclarationB
 import bia.model.TypeAliasDeclarationB
-import bia.model.TypeExpression
+import bia.model.TypeExpressionB
 import bia.model.TypeReference
 import bia.model.TypeVariableB
 import bia.model.UnionAlternativeB
@@ -84,7 +84,7 @@ fun transformTopLevelDeclaration(
         ctx: BiaParser.UnionDeclarationContext,
     ): TopLevelDeclarationB = UnionDeclarationB(
         unionName = ctx.givenName.text,
-        typeVariables = transformTypeVariableDeclarations(
+        typeArguments = transformTypeVariableDeclarations(
             genericArgumentDeclarationList = ctx.genericArgumentListDeclaration(),
         ),
         alternatives = ctx.unionEntryDeclaration().map {
@@ -238,7 +238,7 @@ fun transformExpression(
             callee = transformExpression(
                 expression = ctx.callee,
             ),
-            typeArguments = ctx.callTypeVariableList()?.typeExpression()?.map {
+            typeArguments = ctx.typeExpressionList()?.typeExpression()?.map {
                 transformTypeExpression(
                     typeExpression = it,
                 )
@@ -470,7 +470,7 @@ fun transformReferenceExpression(
 
 fun transformTypeExpression(
     typeExpression: BiaParser.TypeExpressionContext,
-): TypeExpression = object : BiaParserBaseVisitor<TypeExpression>() {
+): TypeExpressionB = object : BiaParserBaseVisitor<TypeExpressionB>() {
     override fun visitNumberType(ctx: BiaParser.NumberTypeContext) = NumberType
 
     override fun visitBooleanType(ctx: BiaParser.BooleanTypeContext) = BooleanType
@@ -478,7 +478,7 @@ fun transformTypeExpression(
     override fun visitBigIntegerType(ctx: BiaParser.BigIntegerTypeContext) = BigIntegerType
 
     override fun visitFunctionType(ctx: BiaParser.FunctionTypeContext) = FunctionTypeB(
-        typeVariables = emptyList(),
+        typeArguments = emptyList(),
         argumentListDeclaration = transformArgumentListDeclarations(
             argumentListDeclaration = ctx.argumentListDeclaration(),
         ),
@@ -487,7 +487,7 @@ fun transformTypeExpression(
         ),
     )
 
-    override fun visitConstructedType(ctx: BiaParser.ConstructedTypeContext): TypeExpression {
+    override fun visitConstructedType(ctx: BiaParser.ConstructedTypeContext): TypeExpressionB {
         val typeConstructor: BiaParser.TypeConstructorContext = ctx.typeConstructor()
         val argumentType = transformTypeExpression(
             typeExpression = ctx.typeExpression(),
@@ -505,7 +505,7 @@ fun transformTypeExpression(
         ),
     )
 
-    override fun visitTypeReference(ctx: BiaParser.TypeReferenceContext): TypeExpression =
+    override fun visitTypeReference(ctx: BiaParser.TypeReferenceContext): TypeExpressionB =
         transformTypeReference(typeReference = ctx)
 
     override fun visitObjectType(ctx: BiaParser.ObjectTypeContext) = ObjectTypeB(
@@ -519,14 +519,17 @@ fun transformTypeExpression(
 
 private fun transformTypeReference(
     typeReference: BiaParser.TypeReferenceContext,
-): TypeExpression = TypeReference(
-    referredName = typeReference.name.text
+): TypeExpressionB = TypeReference(
+    referredName = typeReference.name.text,
+    passedTypeArguments = typeReference.typeExpressionList()?.typeExpression()?.map {
+        transformTypeExpression(typeExpression = it)
+    } ?: emptyList()
 )
 
 fun transformTypeConstructor(
     typeConstructor: BiaParser.TypeConstructorContext,
-    argumentType: TypeExpression,
-): TypeExpression = object : BiaParserBaseVisitor<TypeExpression>() {
+    argumentType: TypeExpressionB,
+): TypeExpressionB = object : BiaParserBaseVisitor<TypeExpressionB>() {
     override fun visitListConstructor(ctx: BiaParser.ListConstructorContext) =
         ListTypeB(elementType = argumentType)
 

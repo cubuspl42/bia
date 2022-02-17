@@ -20,7 +20,7 @@ fun parseExpression(
         declarations = scopeDeclarations.associate {
             it.givenName to ClosedDeclaration(declaration = it)
         },
-        typeVariables = scopeTypeVariables.associate {
+        typeAlikes = scopeTypeVariables.associate {
             it.givenName to listOf(it)
         },
     ),

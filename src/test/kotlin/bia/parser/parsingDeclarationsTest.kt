@@ -40,7 +40,7 @@ internal class ParsingDeclarationsTest {
         assertEquals(
             expected = UnionDeclarationB(
                 unionName = "Union1",
-                typeVariables = emptyList(),
+                typeArguments = emptyList(),
                 alternatives = listOf(
                     UnionAlternativeB(
                         tagName = "Foo",
@@ -65,7 +65,7 @@ internal class ParsingDeclarationsTest {
         assertEquals(
             expected = UnionDeclarationB(
                 unionName = "Union1",
-                typeVariables = listOf(
+                typeArguments = listOf(
                     TypeVariableB(givenName = "A"),
                     TypeVariableB(givenName = "B"),
                 ),

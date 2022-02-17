@@ -22,6 +22,7 @@ import bia.model.UnionAlternative
 import bia.model.UnionAlternativeB
 import bia.model.UnionDeclaration
 import bia.model.UnionDeclarationB
+import bia.model.UnionTypeConstructor
 import bia.model.ValDeclarationB
 import bia.model.WideUnionType
 import bia.model.expressions.BooleanLiteralExpression
@@ -215,7 +216,7 @@ internal class TypeCheckingTest {
                             valueType = unionType,
                         ),
                     ),
-                    typeVariables = emptyMap(),
+                    typeAlikes = emptyMap(),
                 ),
             )
 
@@ -266,7 +267,7 @@ internal class TypeCheckingTest {
                             valueType = unionType,
                         ),
                     ),
-                    typeVariables = emptyMap(),
+                    typeAlikes = emptyMap(),
                 ),
             )
 
@@ -338,7 +339,7 @@ internal class TypeCheckingTest {
                         valueType = unionType,
                     ),
                 ),
-                typeVariables = emptyMap(),
+                typeAlikes = emptyMap(),
             ),
         )
 
@@ -447,7 +448,7 @@ internal class TypeCheckingTest {
 
         assertEquals(
             expected = FunctionType(
-                typeVariables = listOf(
+                typeArguments = listOf(
                     typeVariable,
                 ),
                 argumentListDeclaration = BasicArgumentListDeclaration(
@@ -505,10 +506,52 @@ internal class TypeCheckingTest {
     }
 
     @Test
-    fun testUnionDeclaration() {
+    fun testBasicUnionDeclaration() {
         val (_, unionDeclaration) = UnionDeclarationB(
             unionName = "Union1",
-            typeVariables = listOf(
+            typeArguments = emptyList(),
+            alternatives = listOf(
+                UnionAlternativeB(
+                    tagName = "Foo",
+                    type = TypeReference("Foo"),
+                ),
+                UnionAlternativeB(
+                    tagName = "Boolean",
+                    type = BooleanType,
+                ),
+            ),
+        ).build(
+            scope = StaticScope.empty.extendType(
+                name = "Foo",
+                typeAlike = NumberType,
+            ),
+        )
+
+        assertEquals(
+            expected = UnionDeclaration(
+                unionName = "Union1",
+                unionTypeAlike = WideUnionType(
+                    alternatives = setOf(
+                        UnionAlternative(
+                            tagName = "Foo",
+                            type = NumberType,
+                        ),
+                        UnionAlternative(
+                            tagName = "Boolean",
+                            type = BooleanType,
+                        ),
+                    ),
+                ),
+            ),
+            actual = unionDeclaration,
+        )
+    }
+
+    @Test
+    fun testGenericUnionDeclaration() {
+        val (_, unionDeclaration) = UnionDeclarationB(
+            unionName = "Union1",
+            typeArguments = listOf(
                 TypeVariableB(givenName = "A"),
                 TypeVariableB(givenName = "B"),
             ),
@@ -522,43 +565,75 @@ internal class TypeCheckingTest {
                     type = TypeReference("B"),
                 ),
                 UnionAlternativeB(
-                    tagName = "Foo",
-                    type = TypeReference("Foo"),
+                    tagName = "Number",
+                    type = NumberType,
                 ),
             ),
         ).build(
-            scope = StaticScope.empty.extendType(
-                name = "Foo",
-                type = NumberType,
-            ),
+            scope = StaticScope.empty,
         )
 
         assertEquals(
             expected = UnionDeclaration(
                 unionName = "Union1",
-                unionType = WideUnionType(
-                    typeVariables = listOf(
+                unionTypeAlike = UnionTypeConstructor(
+                    typeArguments = listOf(
                         TypeVariable(givenName = "A", id = 0),
                         TypeVariable(givenName = "B", id = 0),
                     ),
-                    alternatives = setOf(
-                        UnionAlternative(
-                            tagName = "A",
-                            type = TypeVariable(givenName = "A", id = 0),
-                        ),
-                        UnionAlternative(
-                            tagName = "B",
-                            type = TypeVariable(givenName = "B", id = 0),
-                        ),
-                        UnionAlternative(
-                            tagName = "Foo",
-                            type = NumberType,
+                    typeStructure = WideUnionType(
+                        alternatives = setOf(
+                            UnionAlternative(
+                                tagName = "A",
+                                type = TypeVariable(givenName = "A", id = 0),
+                            ),
+                            UnionAlternative(
+                                tagName = "B",
+                                type = TypeVariable(givenName = "B", id = 0),
+                            ),
+                            UnionAlternative(
+                                tagName = "Number",
+                                type = NumberType,
+                            ),
                         ),
                     ),
                 ),
             ),
             actual = unionDeclaration,
         )
+    }
+
+    @Test
+    fun testArgumentDeclarationWithNonType() {
+        assertThrows<TypeCheckError> {
+            ArgumentDeclarationB(
+                givenName = "foo",
+                valueType = TypeReference(
+                    "Foo",
+                ),
+            ).build(
+                scope = StaticScope.empty.extendType(
+                    name = "Foo",
+                    typeAlike = UnionTypeConstructor(
+                        typeArguments = listOf(
+                            TypeVariable(givenName = "A", id = 0),
+                        ),
+                        typeStructure = WideUnionType(
+                            alternatives = setOf(
+                                UnionAlternative(
+                                    tagName = "A",
+                                    type = TypeVariable(givenName = "A", id = 0),
+                                ),
+                                UnionAlternative(
+                                    tagName = "Number",
+                                    type = NumberType,
+                                ),
+                            ),
+                        ),
+                    ),
+                )
+            )
+        }
     }
 }
 

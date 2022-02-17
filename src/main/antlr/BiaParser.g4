@@ -21,12 +21,12 @@ typeExpression
     | LeftBrace objectTypeEntryDeclaration (Comma objectTypeEntryDeclaration)* RightBrace # objectType
     ;
 
-typeReference : name=Identifier ;
+typeReference : name=Identifier typeExpressionList? ;
 
 objectTypeEntryDeclaration
     : fieldName=Identifier Colon fieldType=typeExpression ;
 
-callTypeVariableList: Lt typeExpression (Comma typeExpression)* Gt ;
+typeExpressionList: Lt typeExpression (Comma typeExpression)* Gt ;
 
 expression
     : callableExpression # callableExpressionAlt
@@ -61,7 +61,7 @@ lambdaBody
 
 callableExpression
     : LeftParen expression RightParen # parenExpression
-    | callee=callableExpression callTypeVariableList? LeftParen callArgumentList RightParen # callExpression
+    | callee=callableExpression typeExpressionList? LeftParen callArgumentList RightParen # callExpression
     | self=callableExpression Colon referredCalleeName=Identifier # postfixCallExpression
     | referredName=Identifier # referenceExpression
     | matchExpression # matchExpressionAlt
