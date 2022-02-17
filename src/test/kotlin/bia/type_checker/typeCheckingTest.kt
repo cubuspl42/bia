@@ -29,6 +29,7 @@ import bia.model.UnionTypeConstructor
 import bia.model.ValDeclarationB
 import bia.model.WideUnionType
 import bia.model.expressions.BooleanLiteralExpression
+import bia.model.expressions.CallExpressionB
 import bia.model.expressions.IfExpression
 import bia.model.expressions.IntLiteralExpression
 import bia.model.expressions.IsExpression
@@ -731,6 +732,142 @@ internal class TypeCheckingTest {
         assertContains(
             iterable = extendedScope.declarations.values,
             element = ClosedDeclaration(singletonDeclaration),
+        )
+    }
+    
+    @Test
+    fun testBasicCall() {
+        val callExpression = CallExpressionB(
+            callee = ReferenceExpressionB(
+                referredName = "foo",
+            ),
+            explicitTypeArguments = null,
+            arguments = listOf(
+                IntLiteralExpression(value = 0),
+            ),
+        ).build(
+            scope = StaticScope.empty.extendClosed(
+                name = "foo",
+                declaration = ArgumentDeclaration(
+                    givenName = "foo",
+                    valueType = FunctionType(
+                        typeArguments = emptyList(),
+                        argumentListDeclaration = BasicArgumentListDeclaration(
+                            argumentDeclarations = listOf(
+                                ArgumentDeclaration(
+                                    givenName = "a",
+                                    valueType = NumberType,
+                                ),
+                            )
+                        ),
+                        returnType = BooleanType,
+                    ),
+                ),
+            ),
+        )
+
+        callExpression.validate()
+
+        assertEquals(
+            expected = BooleanType,
+            actual = callExpression.type,
+        )
+    }
+
+    @Test
+    fun testExplicitGenericCall() {
+        val callExpression = CallExpressionB(
+            callee = ReferenceExpressionB(
+                referredName = "foo",
+            ),
+            explicitTypeArguments = listOf(
+                NumberType,
+                BooleanType,
+            ),
+            arguments = listOf(
+                IntLiteralExpression(value = 0),
+                BooleanLiteralExpression(value = false),
+            ),
+        ).build(
+            scope = StaticScope.empty.extendClosed(
+                name = "foo",
+                declaration = ArgumentDeclaration(
+                    givenName = "foo",
+                    valueType = FunctionType(
+                        typeArguments = listOf(
+                            TypeVariable(givenName = "A", id = 0),
+                            TypeVariable(givenName = "B", id = 0),
+                        ),
+                        argumentListDeclaration = BasicArgumentListDeclaration(
+                            argumentDeclarations = listOf(
+                                ArgumentDeclaration(
+                                    givenName = "a",
+                                    TypeVariable(givenName = "A", id = 0),
+                                ),
+                                ArgumentDeclaration(
+                                    givenName = "b",
+                                    TypeVariable(givenName = "B", id = 0),
+                                ),
+                            )
+                        ),
+                        returnType = TypeVariable(givenName = "B", id = 0),
+                    ),
+                ),
+            ),
+        )
+
+        callExpression.validate()
+
+        assertEquals(
+            expected = BooleanType,
+            actual = callExpression.type,
+        )
+    }
+
+    @Test
+    fun testInferredGenericCall() {
+        val callExpression = CallExpressionB(
+            callee = ReferenceExpressionB(
+                referredName = "foo",
+            ),
+            explicitTypeArguments = null,
+            arguments = listOf(
+                IntLiteralExpression(value = 0),
+                BooleanLiteralExpression(value = false),
+            ),
+        ).build(
+            scope = StaticScope.empty.extendClosed(
+                name = "foo",
+                declaration = ArgumentDeclaration(
+                    givenName = "foo",
+                    valueType = FunctionType(
+                        typeArguments = listOf(
+                            TypeVariable(givenName = "A", id = 0),
+                            TypeVariable(givenName = "B", id = 0),
+                        ),
+                        argumentListDeclaration = BasicArgumentListDeclaration(
+                            argumentDeclarations = listOf(
+                                ArgumentDeclaration(
+                                    givenName = "a",
+                                    TypeVariable(givenName = "A", id = 0),
+                                ),
+                                ArgumentDeclaration(
+                                    givenName = "b",
+                                    TypeVariable(givenName = "B", id = 0),
+                                ),
+                            )
+                        ),
+                        returnType = TypeVariable(givenName = "B", id = 0),
+                    ),
+                ),
+            ),
+        )
+
+        callExpression.validate()
+
+        assertEquals(
+            expected = BooleanType,
+            actual = callExpression.type,
         )
     }
 }

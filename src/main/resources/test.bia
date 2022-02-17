@@ -28,9 +28,9 @@ singleton None
 
 union Option = <A> A #Some | None
 
-val Option:map = <A, B> (
+val Option:map = <A> (
     this : Option<A>
-) => (
+) => <B> (
     f : (a : A) -> B
 ) -> Option<B> => match this -> Option<B> {
     case Some => f(untag this) #Some
@@ -50,6 +50,10 @@ val foo2 = (pred : Pred<Number>) -> Boolean =>
 val foo3 = (pred : Pred) -> Boolean =>
     pred<Number>(1) and pred<Boolean>(false)
 
+val foo4 = <A> (oa : Option<A>) => 0
+
+val foo5 = (on : Option<Number>) => foo4(on)
+
 val main = () => {
     // return bar2({
     //     foo1 = 10,
@@ -62,6 +66,8 @@ val main = () => {
         baz = true
     })
 
-    return (456 #Some)
-        :Option:map<Number, Number>((n : Number) => n * 2)
+    // return (456 #Some)
+    //    :Option:map((n : Number) => n * 2)
+
+    return 1234
 }

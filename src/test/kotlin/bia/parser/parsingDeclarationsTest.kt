@@ -72,15 +72,15 @@ internal class ParsingDeclarationsTest {
                 ),
                 alternatives = listOf(
                     UnionAlternativeB(
-                        explicitTagName = "A",
+                        explicitTagName = null,
                         typeExpression = TypeReference("A"),
                     ),
                     UnionAlternativeB(
-                        explicitTagName = "B",
+                        explicitTagName = null,
                         typeExpression = TypeReference("B"),
                     ),
                     UnionAlternativeB(
-                        explicitTagName = "Foo",
+                        explicitTagName = null,
                         typeExpression = TypeReference("Foo"),
                     ),
                 ),

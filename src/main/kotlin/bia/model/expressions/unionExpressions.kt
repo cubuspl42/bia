@@ -89,7 +89,7 @@ data class MatchBranch(
 
 data class MatchExpression(
     val matchee: Expression,
-    val explicitType: Type?,
+    val explicitType: Type? = null,
     val taggedBranches: List<MatchBranch>,
     val elseBranch: Expression?,
 ) : Expression {
@@ -174,7 +174,7 @@ data class MatchBranchB(
 
 data class MatchExpressionB(
     val matchee: ExpressionB,
-    val explicitType: TypeExpressionB?,
+    val explicitType: TypeExpressionB? = null,
     val taggedBranches: List<MatchBranchB>,
     val elseBranch: ExpressionB?,
 ) : ExpressionB {

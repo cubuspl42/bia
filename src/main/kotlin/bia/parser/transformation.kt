@@ -245,7 +245,7 @@ fun transformExpression(
             callee = transformExpression(
                 expression = ctx.callee,
             ),
-            typeArguments = transformTypeExpressionList(
+            explicitTypeArguments = transformTypeExpressionList(
                 typeExpressionList = ctx.typeExpressionList(),
             ),
             arguments = ctx.callArgumentList().expression().map {
@@ -261,7 +261,7 @@ fun transformExpression(
         callee = ReferenceExpressionB(
             referredName = ctx.referredCalleeName.text,
         ),
-        typeArguments = transformTypeExpressionList(
+        explicitTypeArguments = transformTypeExpressionList(
             typeExpressionList = ctx.typeExpressionList(),
         ),
         arguments = listOf(
@@ -480,11 +480,11 @@ fun transformReferenceExpression(
 
 fun transformTypeExpressionList(
     typeExpressionList: BiaParser.TypeExpressionListContext?,
-): List<TypeExpressionB> = typeExpressionList?.typeExpression()?.map {
+): List<TypeExpressionB>? = typeExpressionList?.typeExpression()?.map {
     transformTypeExpression(
         typeExpression = it,
     )
-} ?: emptyList()
+}
 
 fun transformTypeExpression(
     typeExpression: BiaParser.TypeExpressionContext,
@@ -543,7 +543,7 @@ private fun transformTypeReference(
     referredName = typeReference.name.text,
     passedTypeArguments = transformTypeExpressionList(
         typeExpressionList = typeReference.typeExpressionList(),
-    ),
+    ) ?: emptyList(),
 )
 
 fun transformTypeConstructor(

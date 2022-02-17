@@ -59,7 +59,7 @@ data class ReferenceExpressionB(
 
 data class CallExpression(
     val callee: Expression,
-    val typeArguments: List<Type>,
+    val explicitTypeArguments: List<Type>?,
     val arguments: List<Expression>,
 ) : Expression {
     private val calleeType: FunctionType by lazy {
@@ -68,12 +68,16 @@ data class CallExpression(
     }
 
     private val resolvedCalleeType: FunctionType by lazy {
-        val typeVariableMapping = buildTypeVariableMapping(
-            typeArguments = calleeType.typeArguments,
-            passedTypeArguments = typeArguments,
-        )
+        fun inferTypeArguments() = arguments.map { it.type }
 
-        calleeType.resolveTypeVariables(mapping = typeVariableMapping)
+        if (calleeType.typeArguments.isNotEmpty()) {
+            val typeVariableMapping = buildTypeVariableMapping(
+                typeArguments = calleeType.typeArguments,
+                passedTypeArguments = explicitTypeArguments ?: inferTypeArguments(),
+            )
+
+            calleeType.resolveTypeVariables(mapping = typeVariableMapping)
+        } else calleeType
     }
 
     override val type: Type by lazy {
@@ -85,13 +89,15 @@ data class CallExpression(
 
         val functionName = if (callee is ReferenceExpression) callee.referredName else "(unnamed)"
 
-        validateTypeArguments(
-            typeArguments = calleeType.typeArguments,
-            passedTypeArguments = typeArguments,
-            message = { definedTypeVariableCount, passedTypeArgumentCount ->
-                "Function $functionName was defined with $definedTypeVariableCount type variables, $passedTypeArgumentCount passed"
-            }
-        )
+        explicitTypeArguments?.let {
+            validateTypeArguments(
+                typeArguments = calleeType.typeArguments,
+                passedTypeArguments = it,
+                message = { definedTypeVariableCount, passedTypeArgumentCount ->
+                    "Function $functionName was defined with $definedTypeVariableCount type variables, $passedTypeArgumentCount passed"
+                }
+            )
+        }
 
         resolvedCalleeType.argumentListDeclaration.validateCall(
             functionName = functionName,
@@ -114,6 +120,14 @@ data class CallExpression(
             arguments = argumentValues,
         )
     }
+}
+
+fun inferTypeVariableMappingForArgument(
+    typeArguments: Set<TypeVariable>,
+    argumentType: Type,
+    passedArgumentType: Type,
+): TypeVariableMapping {
+
 }
 
 fun buildTypeVariableMapping(
@@ -148,12 +162,12 @@ fun validateTypeArguments(
 
 data class CallExpressionB(
     val callee: ExpressionB,
-    val typeArguments: List<TypeExpressionB>,
+    val explicitTypeArguments: List<TypeExpressionB>?,
     val arguments: List<ExpressionB>,
 ) : ExpressionB {
-    override fun build(scope: StaticScope): Expression = CallExpression(
+    override fun build(scope: StaticScope) = CallExpression(
         callee = callee.build(scope = scope),
-        typeArguments = typeArguments.map { it.build(scope = scope) },
+        explicitTypeArguments = explicitTypeArguments?.map { it.build(scope = scope) },
         arguments = arguments.map { it.build(scope = scope) },
     )
 }

@@ -1,8 +1,6 @@
 package bia.parser
 
-import bia.model.ArgumentDeclaration
 import bia.model.ArgumentDeclarationB
-import bia.model.BasicArgumentListDeclaration
 import bia.model.BasicArgumentListDeclarationB
 import bia.model.BooleanType
 import bia.model.FunctionBodyB
@@ -44,6 +42,29 @@ internal class ParsingExpressionsTest {
     }
 
     @Test
+    fun parseBasicCall() {
+        assertEquals(
+            expected = CallExpressionB(
+                callee = ReferenceExpressionB(
+                    referredName = "f",
+                ),
+                explicitTypeArguments = null,
+                arguments = listOf(
+                    ReferenceExpressionB(
+                        referredName = "a",
+                    ),
+                    ReferenceExpressionB(
+                        referredName = "b",
+                    ),
+                ),
+            ),
+            actual = parseExpressionB(
+                source = "f(a, b)",
+            ),
+        )
+    }
+
+    @Test
     fun parseBasicGenericCall() {
         val aTv = TypeVariable(givenName = "A", id = 0)
 
@@ -53,7 +74,7 @@ internal class ParsingExpressionsTest {
                     referredName = "f",
                     referredDeclaration = null,
                 ),
-                typeArguments = listOf(aTv),
+                explicitTypeArguments = listOf(aTv),
                 arguments = listOf(
                     ReferenceExpression(
                         referredName = "a",
@@ -86,7 +107,7 @@ internal class ParsingExpressionsTest {
                         referredDeclaration = null,
                     ),
                 ),
-                typeArguments = listOf(aTv),
+                explicitTypeArguments = listOf(aTv),
                 arguments = listOf(
                     ReferenceExpression(
                         referredName = "c",
@@ -183,7 +204,7 @@ internal class ParsingExpressionsTest {
                 callee = ReferenceExpressionB(
                     referredName = "functionName",
                 ),
-                typeArguments = emptyList(),
+                explicitTypeArguments = null,
                 arguments = listOf(
                     ReferenceExpressionB(
                         referredName = "callee",
@@ -204,14 +225,14 @@ internal class ParsingExpressionsTest {
                     callee = ReferenceExpressionB(
                         referredName = "functionName",
                     ),
-                    typeArguments = emptyList(),
+                    explicitTypeArguments = null,
                     arguments = listOf(
                         ReferenceExpressionB(
                             referredName = "callee",
                         ),
                     ),
                 ),
-                typeArguments = emptyList(),
+                explicitTypeArguments = null,
                 arguments = listOf(
                     ReferenceExpressionB(
                         referredName = "arg1",
