@@ -26,11 +26,11 @@ val MyClass1:mul = (this : MyClass1) => (arg1 : Number, arg2 : Number) => {
 
 typealias None = Number
 
-typealias Pred = <A> (a : A) => Boolean
+typealias Pred = <A> (a : A) -> Boolean
 
 union Option = <A> A | None
 
-val foo = (oa : Option) => match oa {
+val foo = (oa : Option<A>) => match oa {
     case A => 1
     case None => 0
 }
@@ -39,7 +39,7 @@ val foo2 = (pred : Pred<Number>) -> Boolean =>
     pred(0)
 
 val foo3 = (pred : Pred) -> Boolean =>
-    pred(0) and pred(false)
+    pred<Number>(1) and pred<Boolean>(false)
 
 val main = () => {
     // return bar2({
@@ -53,5 +53,8 @@ val main = () => {
         baz = true
     })
 
-    return myObj1 :MyClass1:mul (4, 5)
+    return {
+        a = foo2((n : Number) => n % 2 == 0),
+        b = foo3(<A> (a : A) => false)
+    }
 }

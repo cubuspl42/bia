@@ -478,7 +478,9 @@ fun transformTypeExpression(
     override fun visitBigIntegerType(ctx: BiaParser.BigIntegerTypeContext) = BigIntegerType
 
     override fun visitFunctionType(ctx: BiaParser.FunctionTypeContext) = FunctionTypeB(
-        typeArguments = emptyList(),
+        typeArguments = transformTypeVariableDeclarations(
+            genericArgumentDeclarationList = ctx.genericArgumentListDeclaration(),
+        ),
         argumentListDeclaration = transformArgumentListDeclarations(
             argumentListDeclaration = ctx.argumentListDeclaration(),
         ),

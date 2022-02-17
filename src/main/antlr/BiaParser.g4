@@ -14,7 +14,7 @@ typeExpression
     : NumberType # numberType
     | BooleanType # booleanType
     | BigIntegerType # bigIntegerType
-    | argumentListDeclaration Colon returnType=typeExpression # functionType
+    | genericArgumentListDeclaration? argumentListDeclaration (Colon | ThinArrow) returnType=typeExpression # functionType
     | typeConstructor Lt typeExpression Gt # constructedType
     | typeExpression QuestionMark  # nullableType
     | typeReference # typeReferenceAlt
