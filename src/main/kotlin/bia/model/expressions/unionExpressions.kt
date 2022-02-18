@@ -14,6 +14,7 @@ import bia.model.UnionAlternative
 import bia.model.UnionType
 import bia.model.Value
 import bia.model.asTaggedValue
+import bia.model.buildType
 import bia.model.isAssignableTo
 import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
@@ -181,7 +182,7 @@ data class MatchExpressionB(
     override fun build(scope: StaticScope): MatchExpression {
         val matcheeExpression = matchee.build(scope = scope)
 
-        val explicitType = explicitType?.build(scope = scope)
+        val explicitType = explicitType?.buildType(scope = scope)
 
         fun extendScopeWithNarrowedType(
             tagName: String,

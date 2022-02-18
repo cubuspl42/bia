@@ -1,10 +1,9 @@
 package bia.parser
 
 import bia.model.ValueDeclaration
-import bia.model.DefDeclaration
-import bia.model.Type
 import bia.model.TypeAlike
 import bia.model.TypeVariable
+import bia.model.ValueDefinition
 import bia.type_checker.TypeCheckError
 
 sealed interface ScopedDeclaration {
@@ -15,11 +14,11 @@ data class ClosedDeclaration(
     override val declaration: ValueDeclaration,
 ) : ScopedDeclaration
 
-data class OpenFunctionDeclaration(
-    val functionDeclaration: DefDeclaration,
+data class OpenDeclaration(
+    val valueDefinition: ValueDefinition,
 ) : ScopedDeclaration {
     override val declaration: ValueDeclaration
-        get() = functionDeclaration
+        get() = valueDefinition
 }
 
 data class AllocateTypeVariableResult(
@@ -59,8 +58,8 @@ abstract class StaticScope {
         typeAlikes = typeAlikes,
     )
 
-    fun extendOpen(name: String, declaration: DefDeclaration) = StaticScope.of(
-        declarations = declarations + (name to OpenFunctionDeclaration(declaration)),
+    fun extendOpen(name: String, declaration: ValueDefinition) = StaticScope.of(
+        declarations = declarations + (name to OpenDeclaration(declaration)),
         typeAlikes = typeAlikes,
     )
 
@@ -92,7 +91,8 @@ abstract class StaticScope {
     fun getScopedDeclaration(name: String): ScopedDeclaration? = declarations[name]
 
     fun getTypeAlike(givenName: String): TypeAlike {
-        return typeAlikes[givenName]?.last() ?: throw TypeCheckError("There's no type or type constructor named $givenName")
+        return typeAlikes[givenName]?.last()
+            ?: throw TypeCheckError("There's no type or type constructor named $givenName")
     }
 }
 

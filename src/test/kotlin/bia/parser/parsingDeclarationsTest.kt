@@ -1,14 +1,17 @@
 package bia.parser
 
-import bia.model.ValueDeclaration
+import bia.model.BooleanType
 import bia.model.DefDeclaration
 import bia.model.NumberType
+import bia.model.ObjectTypeB
 import bia.model.SingletonDeclarationB
 import bia.model.TopLevelDeclarationB
+import bia.model.TypeAliasDeclarationB
 import bia.model.TypeReference
 import bia.model.TypeVariableB
 import bia.model.UnionAlternativeB
 import bia.model.UnionDeclarationB
+import bia.model.ValueDeclaration
 import bia.model.VarargArgumentListDeclaration
 import org.junit.jupiter.api.Test
 import kotlin.test.assertEquals
@@ -98,6 +101,51 @@ internal class ParsingDeclarationsTest {
         assertEquals(
             expected = SingletonDeclarationB(
                 singletonName = "Foo",
+            ),
+            actual = declaration,
+        )
+    }
+
+    @Test
+    fun parseTypeAliasObject() {
+        val declaration = parseTopLevelDeclarationB(
+            source = "typealias Foo = { a : Number, b : Boolean }",
+        )
+
+        assertEquals(
+            expected = TypeAliasDeclarationB(
+                aliasName = "Foo",
+                aliasedType = ObjectTypeB(
+                    entries = mapOf(
+                        "a" to NumberType,
+                        "b" to BooleanType,
+                    ),
+                ),
+            ),
+            actual = declaration,
+        )
+    }
+
+    @Test
+    fun parseTypeAliasObjectGeneric() {
+        val declaration = parseTopLevelDeclarationB(
+            source = "typealias Foo = <A, B> { a : A, b : B, c : Number }",
+        )
+
+        assertEquals(
+            expected = TypeAliasDeclarationB(
+                aliasName = "Foo",
+                aliasedType = ObjectTypeB(
+                    typeArguments = listOf(
+                        TypeVariableB(givenName = "A"),
+                        TypeVariableB(givenName = "B"),
+                    ),
+                    entries = mapOf(
+                        "a" to TypeReference(referredName = "A"),
+                        "b" to TypeReference(referredName = "B"),
+                        "c" to NumberType,
+                    ),
+                ),
             ),
             actual = declaration,
         )

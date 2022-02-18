@@ -101,7 +101,7 @@ internal class TypeArgumentInferenceTest {
     @Test
     fun testVarargCall() {
         val typeVariableMapping = inferTypeVariableMappingForCall(
-            typeArguments = setOf(tvA, tvB),
+            typeArguments = setOf(tvA),
             argumentList = VarargArgumentListDeclaration(
                 givenName = "a",
                 type = ListType(elementType = tvA),

@@ -153,6 +153,6 @@ data class VarargArgumentListDeclarationB(
     override fun build(scope: StaticScope): VarargArgumentListDeclaration =
         VarargArgumentListDeclaration(
             givenName = givenName,
-            type = type.build(scope = scope),
+            type = type.buildType(scope = scope),
         )
 }

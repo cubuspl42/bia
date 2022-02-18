@@ -12,6 +12,8 @@ import bia.model.FunctionType
 import bia.model.NarrowUnionType
 import bia.model.NumberType
 import bia.model.ObjectType
+import bia.model.ObjectTypeB
+import bia.model.ObjectTypeConstructor
 import bia.model.SingletonDeclaration
 import bia.model.SingletonDeclarationB
 import bia.model.SingletonType
@@ -925,6 +927,34 @@ internal class TypeCheckingTest {
         assertEquals(
             expected = returnFunctionType,
             actual = callExpression.type,
+        )
+    }
+
+    @Test
+    fun testGenericObject() {
+        val genericObjectType = ObjectTypeB(
+            typeArguments = listOf(
+                TypeVariableB(givenName = "A"),
+            ),
+            entries = mapOf(
+                "a" to TypeReference(referredName = "A"),
+                "b" to BooleanType,
+            ),
+        ).build(scope = StaticScope.empty)
+
+        assertEquals(
+            expected = genericObjectType,
+            actual = ObjectTypeConstructor(
+                typeArguments = listOf(
+                    TypeVariable(givenName = "A", id = 0),
+                ),
+                typeStructure = ObjectType(
+                    entries = mapOf(
+                        "a" to TypeVariable(givenName = "A", id = 0),
+                        "b" to BooleanType,
+                    ),
+                ),
+            ),
         )
     }
 }

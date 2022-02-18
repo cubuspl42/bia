@@ -34,10 +34,12 @@ interface ValueDefinitionB : TopLevelDeclarationB {
     override fun build(scope: StaticScope): Built
 }
 
-data class ValDeclaration(
+class ValDeclaration(
     override val givenName: String,
-    val initializer: Expression,
+    buildInitializer: () -> Expression,
 ) : ValueDefinition {
+    val initializer by lazy { buildInitializer() }
+
     override val valueType: Type by lazy {
         initializer.type
     }
@@ -63,10 +65,21 @@ data class ValDeclarationB(
     }
 
     override fun build(scope: StaticScope): Built {
-        val valDeclaration = ValDeclaration(
-            givenName = givenName,
-            initializer = initializer.build(scope = scope),
-        )
+        val valDeclaration = object {
+            val valDeclaration: ValDeclaration by lazy {
+                ValDeclaration(
+                    givenName = givenName,
+                    buildInitializer = {
+                        initializer.build(
+                            scope = scope.extendOpen(
+                                name = givenName,
+                                declaration = valDeclaration,
+                            ),
+                        )
+                    },
+                )
+            }
+        }.valDeclaration
 
         return Built(
             extendedScope = scope.extendClosed(
@@ -155,7 +168,7 @@ data class DefDeclarationB(
                     givenName = givenName,
                     typeVariables = builtTypeVariables.typeVariables,
                     argumentListDeclaration = builtArgumentListDeclaration,
-                    explicitReturnType = explicitReturnType?.build(
+                    explicitReturnType = explicitReturnType?.buildType(
                         scope = scopeWithTypeVariables,
                     ),
                     buildDefinition = {
@@ -265,7 +278,7 @@ data class ArgumentDeclarationB(
 ) {
     fun build(scope: StaticScope) = ArgumentDeclaration(
         givenName = givenName,
-        valueType = valueType.build(scope = scope),
+        valueType = valueType.buildType(scope = scope),
     )
 }
 
@@ -334,11 +347,15 @@ fun buildValueDefinitions(
 
 data class TypeAliasDeclaration(
     val aliasName: String,
-    val aliasedType: Type,
+    val aliasedTypeAlike: TypeAlike,
 ) : TopLevelDeclaration {
     override fun validate() {
     }
 }
+
+//sealed interface TypeAliasable {
+//     fun buildTypeAlike(scope: StaticScope): TypeAlike
+//}
 
 data class TypeAliasDeclarationB(
     val aliasName: String,
@@ -355,13 +372,13 @@ data class TypeAliasDeclarationB(
     override fun build(scope: StaticScope): Built {
         val typeAliasDeclaration = TypeAliasDeclaration(
             aliasName = aliasName,
-            aliasedType = aliasedType.build(scope = scope),
+            aliasedTypeAlike = aliasedType.build(scope = scope),
         )
 
         return Built(
             extendedScope = scope.extendType(
                 name = aliasName,
-                typeAlike = typeAliasDeclaration.aliasedType,
+                typeAlike = typeAliasDeclaration.aliasedTypeAlike,
             ),
             typeAliasDeclaration = typeAliasDeclaration,
         )
@@ -392,7 +409,7 @@ data class UnionAlternativeB(
 
         return UnionAlternative(
             tagName = tagName,
-            type = typeExpression.build(scope),
+            type = typeExpression.buildType(scope),
         )
     }
 }

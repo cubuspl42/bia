@@ -4,6 +4,7 @@ import bia.interpreter.DynamicScope
 import bia.model.ArgumentListDeclaration
 import bia.model.ArgumentListDeclarationB
 import bia.model.BasicArgumentListDeclaration
+import bia.model.DefDeclaration
 import bia.model.DefinedFunctionValue
 import bia.model.FunctionBody
 import bia.model.FunctionBodyB
@@ -18,10 +19,11 @@ import bia.model.Value
 import bia.model.asBooleanValue
 import bia.model.asFunctionValue
 import bia.model.asObjectValue
+import bia.model.buildType
 import bia.model.buildTypeVariables
 import bia.model.validateFunction
 import bia.parser.ClosedDeclaration
-import bia.parser.OpenFunctionDeclaration
+import bia.parser.OpenDeclaration
 import bia.parser.ScopedDeclaration
 import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
@@ -39,8 +41,13 @@ data class ReferenceExpression(
 
         when (referredDeclaration) {
             is ClosedDeclaration -> referredDeclaration.declaration.valueType
-            is OpenFunctionDeclaration -> referredDeclaration.functionDeclaration.explicitType
-                ?: throw TypeCheckError("Recursively referenced function $referredName has no explicit return type")
+            is OpenDeclaration -> {
+                // TODO: Remove the cast, it's a temporary hack. Make recursive val-functions work. Add tests for that.
+                val valueDefinition = referredDeclaration.valueDefinition as DefDeclaration
+
+                valueDefinition.explicitType
+                    ?: throw TypeCheckError("Recursively referenced function $referredName has no explicit return type")
+            }
         }
     }
 
@@ -164,7 +171,7 @@ data class CallExpressionB(
 ) : ExpressionB {
     override fun build(scope: StaticScope) = CallExpression(
         callee = callee.build(scope = scope),
-        explicitTypeArguments = explicitTypeArguments?.map { it.build(scope = scope) },
+        explicitTypeArguments = explicitTypeArguments?.map { it.buildType(scope = scope) },
         passedArguments = arguments.map { it.build(scope = scope) },
     )
 }
@@ -278,7 +285,7 @@ data class LambdaExpressionB(
         return LambdaExpression(
             typeVariables = builtTypeVariables.typeVariables,
             argumentListDeclaration = argumentListDeclaration,
-            explicitReturnType = explicitReturnType?.build(
+            explicitReturnType = explicitReturnType?.buildType(
                 scope = scope,
             ),
             body = body.build(scope = scope),

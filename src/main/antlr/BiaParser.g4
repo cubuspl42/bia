@@ -19,7 +19,7 @@ typeExpression
     | typeConstructor Lt typeExpression Gt # constructedType
     | typeExpression QuestionMark  # nullableType
     | typeReference # typeReferenceAlt
-    | LeftBrace objectTypeEntryDeclaration (Comma objectTypeEntryDeclaration)* RightBrace # objectType
+    | genericArgumentListDeclaration? LeftBrace objectTypeEntryDeclaration (Comma objectTypeEntryDeclaration)* RightBrace # objectType
     ;
 
 typeReference : name=Identifier typeExpressionList? ;
@@ -49,7 +49,6 @@ expression
     | objectLiteral # objectLiteralAlt
     | If guard=expression Then trueBranch=expression Else falseBranch=expression # ifExpression
     | genericArgumentListDeclaration? argumentListDeclaration (ThinArrow explicitReturnType=typeExpression)? FatArrow body=lambdaBody # lambdaExpression
-    | expression Dot readFieldName=Identifier # objectFieldRead
     | expression Is tagName=Identifier # isExpression
     | expression Hash attachedTagName=Identifier # tagExpression
     | Untag expression # untagExpression
@@ -66,6 +65,7 @@ callableExpression
     | self=callableExpression Colon referredCalleeName=Identifier typeExpressionList? # postfixCallExpression
     | referredName=Identifier # referenceExpression
     | matchExpression # matchExpressionAlt
+    | callableExpression Dot readFieldName=Identifier # objectFieldRead
     ;
 
 objectLiteral

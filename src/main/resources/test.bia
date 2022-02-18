@@ -15,7 +15,36 @@ val Option:map = <A> (
     case None => None # None
 }
 
+typealias Eq = <A> {
+    equals : (left : A, right : A) -> Boolean
+}
+
+val contains = <A> (
+    list : List<A>
+) => (
+    eq : Eq<A>,
+    searched : A
+) -> Boolean => {
+    val recurse = () -> Boolean => {
+        val first = first:L(list)
+        val tail = drop:L(list, 1)
+
+        return if eq.equals(first, searched) then true
+        else contains(eq, tail, searched)
+    }
+
+    return if size:L(list) == 0 then false
+    else recurse()
+}
+
+val eqNumber = {
+    equals = (left : Number, right : Number) => left == right
+}
+
 val main = () => {
-    return none<Number>()
-        :Option:map((n : Number) => n * 2)
+
+    return listOf(1, 2, 3, 4, 5):contains(eqNumber, 3)
+
+    // return none<Number>()
+    //    :Option:map((n : Number) => n * 2)
 }

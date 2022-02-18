@@ -19,7 +19,7 @@ class ExpressionsTest {
     fun testObjectLiteral() {
         val xDeclaration = ValDeclaration(
             givenName = "x",
-            initializer = IntLiteralExpression(value = -1),
+            buildInitializer = { IntLiteralExpression(value = -1) },
         )
 
         val expression = parseExpression(
@@ -84,19 +84,21 @@ class ExpressionsTest {
     fun testObjectFieldRead() {
         val objectDeclaration = ValDeclaration(
             givenName = "obj",
-            initializer = ObjectLiteralExpression(
-                entries = mapOf(
-                    "a" to IntLiteralExpression(
-                        value = 1L,
-                    ),
-                    "b" to IntLiteralExpression(
-                        value = 2L,
-                    ),
-                    "c" to IntLiteralExpression(
-                        value = 3L,
+            buildInitializer = {
+                ObjectLiteralExpression(
+                    entries = mapOf(
+                        "a" to IntLiteralExpression(
+                            value = 1L,
+                        ),
+                        "b" to IntLiteralExpression(
+                            value = 2L,
+                        ),
+                        "c" to IntLiteralExpression(
+                            value = 3L,
+                        ),
                     ),
                 )
-            ),
+            },
         )
 
         val expression = parseExpression(

@@ -5,7 +5,9 @@ import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
 // An entity that resides in the type namespace
-sealed interface TypeAlike
+sealed interface TypeAlike {
+    fun toPrettyString(): String
+}
 
 interface TypeConstructor : TypeAlike {
     val typeArguments: List<TypeVariable>
@@ -14,8 +16,6 @@ interface TypeConstructor : TypeAlike {
 }
 
 sealed interface Type : TypeAlike {
-    fun toPrettyString(): String
-
     fun isAssignableDirectlyTo(other: Type): Boolean = false
 
     fun resolveTypeVariables(mapping: TypeVariableMapping): Type
@@ -33,10 +33,19 @@ data class UnionTypeConstructor(
 
         return typeStructure.resolveTypeVariables(mapping = typeVariableMapping)
     }
+
+    override fun toPrettyString(): String =
+        "${TypeVariable.toPrettyString(typeArguments)} ${typeStructure.toPrettyString()}"
 }
 
-interface TypeExpressionB {
-    fun build(scope: StaticScope): Type
+sealed interface TypeExpressionB {
+    fun build(scope: StaticScope): TypeAlike
+}
+
+fun TypeExpressionB.buildType(scope: StaticScope): Type {
+    val typeAlike = build(scope = scope)
+    return typeAlike as? Type
+        ?: throw TypeCheckError("${typeAlike.toPrettyString()} is not a type (it's a type constructor)")
 }
 
 data class TypeReference(
@@ -55,7 +64,7 @@ data class TypeReference(
 
             typeConstructor.construct(
                 passedTypeArguments = passedTypeArguments.map {
-                    it.build(scope = scope)
+                    it.buildType(scope = scope)
                 },
             )
         }
@@ -81,6 +90,11 @@ data class TypeVariable(
     val givenName: String,
     val id: Int,
 ) : SpecificType {
+    companion object {
+        fun toPrettyString(typeVariables: List<TypeVariable>) =
+            "<${typeVariables.joinToString { it.toPrettyString() }}>"
+    }
+
     override fun toPrettyString(): String = "$givenName#$id"
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
@@ -134,7 +148,7 @@ data class ListType(val elementType: Type) : SpecificType {
 
 data class ListTypeB(val elementType: TypeExpressionB) : TypeExpressionB {
     override fun build(scope: StaticScope) = ListType(
-        elementType = elementType.build(scope),
+        elementType = elementType.buildType(scope = scope),
     )
 }
 
@@ -152,7 +166,7 @@ data class SequenceType(val elementType: Type) : SpecificType {
 
 data class SequenceTypeB(val elementType: TypeExpressionB) : TypeExpressionB {
     override fun build(scope: StaticScope) = SequenceType(
-        elementType = elementType.build(scope),
+        elementType = elementType.buildType(scope = scope),
     )
 }
 
@@ -168,7 +182,7 @@ data class NullableType(val baseType: Type) : SpecificType {
 
 data class NullableTypeB(val baseType: TypeExpressionB) : TypeExpressionB {
     override fun build(scope: StaticScope) = SequenceType(
-        elementType = baseType.build(scope),
+        elementType = baseType.buildType(scope = scope),
     )
 }
 
@@ -227,20 +241,22 @@ data class FunctionTypeB(
             argumentListDeclaration = argumentListDeclaration.build(
                 scope = builtTypeVariables.extendedScope,
             ),
-            returnType = returnType.build(
+            returnType = returnType.buildType(
                 scope = builtTypeVariables.extendedScope,
             ),
         )
     }
 }
 
+sealed interface ObjectTypeAlike : TypeAlike
+
 data class ObjectType(
     val entries: Map<String, Type>,
-) : SpecificType {
+) : SpecificType, ObjectTypeAlike {
     override fun toPrettyString(): String =
         "{ ${entries.entries.joinToString { "${it.key} : ${it.value.toPrettyString()}" }} }"
 
-    override fun resolveTypeVariables(mapping: TypeVariableMapping): Type =
+    override fun resolveTypeVariables(mapping: TypeVariableMapping) =
         copy(
             entries = entries.mapValues { (_, type) ->
                 type.resolveTypeVariables(mapping = mapping)
@@ -249,13 +265,76 @@ data class ObjectType(
 }
 
 data class ObjectTypeB(
+    val typeArguments: List<TypeVariableB> = emptyList(),
     val entries: Map<String, TypeExpressionB>,
 ) : TypeExpressionB {
-    override fun build(scope: StaticScope) = ObjectType(
+    override fun build(scope: StaticScope): TypeAlike = if (typeArguments.isNotEmpty()) {
+        val builtTypeVariables = buildTypeVariables(
+            scope = scope,
+            typeVariables = typeArguments,
+        )
+
+        ObjectTypeConstructor(
+            typeArguments = builtTypeVariables.typeVariables,
+            typeStructure = buildTypeStructure(
+                scope = builtTypeVariables.extendedScope,
+            ),
+        )
+    } else buildTypeStructure(
+        scope = scope,
+    )
+
+    private fun buildTypeStructure(
+        scope: StaticScope,
+    ) = ObjectType(
         entries = entries.mapValues { (_, entryType) ->
-            entryType.build(scope = scope)
+            entryType.buildType(scope = scope)
         }
     )
+}
+
+//data class TypeConstructorB(
+//    val typeArguments: List<TypeVariableB>,
+//    val typeStructure: TypeExpressionB,
+//) : TypeExpressionB {
+//    override fun build(scope: StaticScope): TypeAlike {
+//        val builtTypeVariables = buildTypeVariables(
+//            scope = scope,
+//            typeVariables = typeArguments,
+//        )
+//
+//        return when (typeStructure) {
+//            is FunctionTypeB -> typeStructure.build(
+//                scope = builtTypeVariables.extendedScope,
+//            ).copy(
+//                typeArguments = builtTypeVariables.typeVariables,
+//            )
+//            is ObjectTypeB -> ObjectTypeConstructor(
+//                typeArguments = builtTypeVariables.typeVariables,
+//                typeStructure = typeStructure.build(
+//                    scope = builtTypeVariables.extendedScope,
+//                )
+//            )
+//            else -> throw TypeCheckError("Only function and object types can have type arguments")
+//        }
+//    }
+//}
+
+data class ObjectTypeConstructor(
+    override val typeArguments: List<TypeVariable>,
+    private val typeStructure: ObjectType,
+) : TypeConstructor, ObjectTypeAlike {
+    override fun construct(passedTypeArguments: List<Type>): ObjectType {
+        val typeVariableMapping = buildTypeVariableMapping(
+            typeArguments = typeArguments,
+            passedTypeArguments = passedTypeArguments,
+        )
+
+        return typeStructure.resolveTypeVariables(mapping = typeVariableMapping)
+    }
+
+    override fun toPrettyString(): String =
+        "${TypeVariable.toPrettyString(typeArguments)} ${typeStructure.toPrettyString()}"
 }
 
 data class UnionAlternative(

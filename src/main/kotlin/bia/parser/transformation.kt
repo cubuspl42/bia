@@ -393,7 +393,7 @@ fun transformExpression(
     override fun visitObjectFieldRead(ctx: BiaParser.ObjectFieldReadContext) =
         ObjectFieldReadExpressionB(
             objectExpression = transformExpression(
-                expression = ctx.expression(),
+                expression = ctx.callableExpression(),
             ),
             readFieldName = ctx.readFieldName.text,
         )
@@ -508,7 +508,9 @@ fun transformTypeExpression(
     )
 
     override fun visitConstructedType(ctx: BiaParser.ConstructedTypeContext): TypeExpressionB {
-        val typeConstructor: BiaParser.TypeConstructorContext = ctx.typeConstructor()
+        val typeConstructor: BiaParser.TypeConstructorContext =
+            ctx.typeConstructor()
+
         val argumentType = transformTypeExpression(
             typeExpression = ctx.typeExpression(),
         )
@@ -529,6 +531,9 @@ fun transformTypeExpression(
         transformTypeReference(typeReference = ctx)
 
     override fun visitObjectType(ctx: BiaParser.ObjectTypeContext) = ObjectTypeB(
+        typeArguments = transformTypeVariableDeclarations(
+            genericArgumentDeclarationList = ctx.genericArgumentListDeclaration(),
+        ),
         entries = ctx.objectTypeEntryDeclaration().associate {
             it.fieldName.text to transformTypeExpression(
                 typeExpression = it.typeExpression(),
