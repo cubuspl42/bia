@@ -25,6 +25,7 @@ import bia.parser.OpenFunctionDeclaration
 import bia.parser.ScopedDeclaration
 import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
+import bia.type_checker.inferTypeVariableMappingForCall
 import bia.type_checker.processGuardSmartCast
 import java.lang.IllegalArgumentException
 
@@ -60,7 +61,7 @@ data class ReferenceExpressionB(
 data class CallExpression(
     val callee: Expression,
     val explicitTypeArguments: List<Type>?,
-    val arguments: List<Expression>,
+    val passedArguments: List<Expression>,
 ) : Expression {
     private val calleeType: FunctionType by lazy {
         val calleeType = callee.type
@@ -68,15 +69,19 @@ data class CallExpression(
     }
 
     private val resolvedCalleeType: FunctionType by lazy {
-        fun inferTypeArguments() = arguments.map { it.type }
-
         if (calleeType.typeArguments.isNotEmpty()) {
-            val typeVariableMapping = buildTypeVariableMapping(
+            val typeVariableMapping = if (explicitTypeArguments != null) buildTypeVariableMapping(
                 typeArguments = calleeType.typeArguments,
-                passedTypeArguments = explicitTypeArguments ?: inferTypeArguments(),
+                passedTypeArguments = explicitTypeArguments,
+            ) else inferTypeVariableMappingForCall(
+                typeArguments = calleeType.typeArguments.toSet(),
+                argumentList = calleeType.argumentListDeclaration,
+                passedTypes = passedArguments.map { it.type },
             )
 
-            calleeType.resolveTypeVariables(mapping = typeVariableMapping)
+            calleeType.resolveTypeVariables(
+                mapping = typeVariableMapping
+            )
         } else calleeType
     }
 
@@ -101,7 +106,7 @@ data class CallExpression(
 
         resolvedCalleeType.argumentListDeclaration.validateCall(
             functionName = functionName,
-            arguments = arguments,
+            arguments = passedArguments,
         )
 
         super.validate()
@@ -112,7 +117,7 @@ data class CallExpression(
             message = "Only functions can be called, tried",
         )
 
-        val argumentValues = arguments.map {
+        val argumentValues = passedArguments.map {
             it.evaluate(scope = scope)
         }
 
@@ -160,7 +165,7 @@ data class CallExpressionB(
     override fun build(scope: StaticScope) = CallExpression(
         callee = callee.build(scope = scope),
         explicitTypeArguments = explicitTypeArguments?.map { it.build(scope = scope) },
-        arguments = arguments.map { it.build(scope = scope) },
+        passedArguments = arguments.map { it.build(scope = scope) },
     )
 }
 

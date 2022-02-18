@@ -196,7 +196,7 @@ data class FunctionType(
     }
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping): FunctionType = FunctionType(
-        typeArguments = emptyList(),
+        typeArguments = typeArguments,
         argumentListDeclaration = argumentListDeclaration.resolveTypeVariables(mapping = mapping),
         returnType = returnType.resolveTypeVariables(mapping = mapping),
     )
@@ -311,7 +311,14 @@ data class NarrowUnionType(
 data class TaggedType(
     val taggedType: Type,
     val attachedTagName: String,
-) : SpecificType {
+) : UnionType() {
+    override val alternatives: Set<UnionAlternative> = setOf(
+        UnionAlternative(
+            tagName = attachedTagName,
+            type = taggedType,
+        ),
+    )
+
     override fun toPrettyString(): String =
         "${taggedType.toPrettyString()} # $attachedTagName"
 

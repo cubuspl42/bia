@@ -11,6 +11,7 @@ import bia.model.SequenceType
 import bia.model.TypeVariable
 import bia.model.TypeVariableMapping
 import bia.model.UnionAlternative
+import bia.model.VarargArgumentListDeclaration
 import bia.model.WideUnionType
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
@@ -21,6 +22,123 @@ internal class TypeArgumentInferenceTest {
         private val tvA = TypeVariable(givenName = "A", id = 0)
 
         private val tvB = TypeVariable(givenName = "B", id = 0)
+    }
+
+    @Test
+    fun testBasicCall() {
+        val typeVariableMapping = inferTypeVariableMappingForCall(
+            typeArguments = setOf(tvA, tvB),
+            argumentList = BasicArgumentListDeclaration(
+                argumentDeclarations = listOf(
+                    ArgumentDeclaration(
+                        givenName = "a",
+                        valueType = tvA,
+                    ),
+                    ArgumentDeclaration(
+                        givenName = "b",
+                        valueType = ObjectType(
+                            entries = mapOf(
+                                "foo" to tvB,
+                                "bar" to NumberType,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            passedTypes = listOf(
+                NumberType,
+                ObjectType(
+                    entries = mapOf(
+                        "foo" to BooleanType,
+                        "bar" to NumberType,
+                    ),
+                ),
+            )
+        )
+
+        assertEquals(
+            expected = TypeVariableMapping(
+                mapping = mapOf(
+                    tvA to NumberType,
+                    tvB to BooleanType,
+                )
+            ),
+            actual = typeVariableMapping,
+        )
+    }
+
+    @Test
+    fun testBasicCallIncompatible() {
+        assertThrows<TypeCheckError> {
+            inferTypeVariableMappingForCall(
+                typeArguments = setOf(tvA),
+                argumentList = BasicArgumentListDeclaration(
+                    argumentDeclarations = listOf(
+                        ArgumentDeclaration(
+                            givenName = "a",
+                            valueType = tvA,
+                        ),
+                    ),
+                ),
+                passedTypes = emptyList(),
+            )
+        }
+    }
+
+    @Test
+    fun testBasicCallUnmapped() {
+        assertThrows<TypeCheckError> {
+            inferTypeVariableMappingForCall(
+                typeArguments = setOf(tvA, tvB),
+                argumentList = BasicArgumentListDeclaration(
+                    argumentDeclarations = emptyList(),
+                ),
+                passedTypes = emptyList(),
+            )
+        }
+    }
+
+    @Test
+    fun testVarargCall() {
+        val typeVariableMapping = inferTypeVariableMappingForCall(
+            typeArguments = setOf(tvA, tvB),
+            argumentList = VarargArgumentListDeclaration(
+                givenName = "a",
+                type = ListType(elementType = tvA),
+            ),
+            passedTypes = listOf(
+                ListType(elementType = NumberType),
+                ListType(elementType = NumberType),
+                ListType(elementType = NumberType),
+            )
+        )
+
+        assertEquals(
+            expected = TypeVariableMapping(
+                mapping = mapOf(
+                    tvA to NumberType,
+                )
+            ),
+            actual = typeVariableMapping,
+        )
+    }
+
+    @Test
+    fun testVarargCallAmbiguous() {
+        assertThrows<TypeCheckError> {
+            inferTypeVariableMappingForCall(
+                typeArguments = setOf(tvA, tvB),
+                argumentList = VarargArgumentListDeclaration(
+                    givenName = "a",
+                    type = ListType(elementType = tvA),
+                ),
+                passedTypes = listOf(
+                    ListType(elementType = NumberType),
+                    ListType(elementType = BooleanType),
+                    ListType(elementType = NumberType),
+                )
+            )
+        }
     }
 
     @Test

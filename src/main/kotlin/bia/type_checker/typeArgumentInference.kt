@@ -18,6 +18,74 @@ import bia.model.TypeVariableMapping
 import bia.model.UnionType
 import bia.model.VarargArgumentListDeclaration
 
+fun inferTypeVariableMappingForCall(
+    typeArguments: Set<TypeVariable>,
+    argumentList: ArgumentListDeclaration,
+    passedTypes: List<Type>,
+): TypeVariableMapping {
+    val argumentListMapping = when (argumentList) {
+        is BasicArgumentListDeclaration -> inferTypeVariableMappingForBasicCall(
+            typeArguments = typeArguments,
+            argumentTypes = argumentList.argumentDeclarations.map { it.valueType },
+            passedTypes = passedTypes,
+        )
+        is VarargArgumentListDeclaration -> inferTypeVariableMappingForVarargCall(
+            typeArguments = typeArguments,
+            varargArgumentType = argumentList.type,
+            passedTypes = passedTypes,
+        )
+    }
+
+    val unmappedTypeArgument = typeArguments.firstOrNull { typeArgument ->
+        !argumentListMapping.mapping.containsKey(typeArgument)
+    }
+
+    if (unmappedTypeArgument != null) {
+        throw TypeCheckError("Could not infer type for type argument ${unmappedTypeArgument.toPrettyString()}")
+    }
+
+    return argumentListMapping
+}
+
+fun inferTypeVariableMappingForBasicCall(
+    typeArguments: Set<TypeVariable>,
+    argumentTypes: List<Type>,
+    passedTypes: List<Type>,
+): TypeVariableMapping =
+    argumentTypes.foldIndexed(TypeVariableMapping.empty) { index, accumulatedMapping, argumentType ->
+        val passedType = passedTypes.getOrNull(index)
+            ?: throw TypeCheckError("Could not infer mapping for argument #${index + 1}, as less then ${index + 1} arguments were passed")
+
+        val argumentMapping = inferTypeVariableMappingForPair(
+            typeArguments = typeArguments,
+            matchee = argumentType,
+            matcher = passedType,
+        )
+
+        combineTypeVariableMappings(
+            first = accumulatedMapping,
+            second = argumentMapping,
+        )
+    }
+
+fun inferTypeVariableMappingForVarargCall(
+    typeArguments: Set<TypeVariable>,
+    varargArgumentType: Type,
+    passedTypes: List<Type>,
+): TypeVariableMapping =
+    passedTypes.fold(TypeVariableMapping.empty) { accumulatedMapping, passedType ->
+        val argumentMapping = inferTypeVariableMappingForPair(
+            typeArguments = typeArguments,
+            matchee = varargArgumentType,
+            matcher = passedType,
+        )
+
+        combineTypeVariableMappings(
+            first = accumulatedMapping,
+            second = argumentMapping,
+        )
+    }
+
 fun inferTypeVariableMappingForPair(
     typeArguments: Set<TypeVariable>,
     matchee: Type,
@@ -202,7 +270,7 @@ private fun inferTypeVariableMappingForBasicArgumentListDeclaration(
 ): TypeVariableMapping = if (matcher is BasicArgumentListDeclaration) {
     matchee.argumentDeclarations.foldIndexed(TypeVariableMapping.empty) { index, accumulatedMapping, argument ->
         val matcherArgument = matcher.argumentDeclarations.getOrNull(index)
-            ?: throw TypeCheckError("Could not infer mapping for argument ${index + 1}, as the matcher has less then ${index + 1} arguments")
+            ?: throw TypeCheckError("Could not infer mapping for argument #${index + 1}, as the matcher has less then ${index + 1} arguments")
 
         val argumentMapping = inferTypeVariableMappingForPair(
             typeArguments = typeArguments,
@@ -224,14 +292,14 @@ private fun inferTypeVariableMappingForVarargArgumentListDeclaration(
     matchee: VarargArgumentListDeclaration,
     matcher: ArgumentListDeclaration,
 ): TypeVariableMapping = if (matcher is VarargArgumentListDeclaration) {
-     inferTypeVariableMappingForPair(
-         typeArguments = typeArguments,
-         matchee = matchee.type,
-         matcher = matcher.type,
-     )
- } else {
-     throw TypeCheckError("Could not infer mapping for vararg argument list ${matchee.toPrettyString()} and ${matcher.toPrettyString()}")
- }
+    inferTypeVariableMappingForPair(
+        typeArguments = typeArguments,
+        matchee = matchee.type,
+        matcher = matcher.type,
+    )
+} else {
+    throw TypeCheckError("Could not infer mapping for vararg argument list ${matchee.toPrettyString()} and ${matcher.toPrettyString()}")
+}
 
 private fun combineTypeVariableMappings(
     first: TypeVariableMapping,

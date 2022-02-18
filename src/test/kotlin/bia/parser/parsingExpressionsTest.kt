@@ -75,7 +75,7 @@ internal class ParsingExpressionsTest {
                     referredDeclaration = null,
                 ),
                 explicitTypeArguments = listOf(aTv),
-                arguments = listOf(
+                passedArguments = listOf(
                     ReferenceExpression(
                         referredName = "a",
                         referredDeclaration = null,
@@ -108,7 +108,7 @@ internal class ParsingExpressionsTest {
                     ),
                 ),
                 explicitTypeArguments = listOf(aTv),
-                arguments = listOf(
+                passedArguments = listOf(
                     ReferenceExpression(
                         referredName = "c",
                         referredDeclaration = null,

@@ -1,32 +1,10 @@
-typealias MyClass1 = {
-    foo : Number,
-    bar : Number,
-    baz : Boolean
-}
-
-val MyClass1:new = (args : {
-    foo : Number,
-    bar : Number,
-    baz : Boolean
-}) -> MyClass1 => {
-    return {
-        foo = args.foo,
-        bar = args.bar,
-        baz = args.baz
-    }
-}
-
-val MyClass1:foo = (this : MyClass1) -> Number => {
-    return this.foo
-}
-
-val MyClass1:mul = (this : MyClass1) => (arg1 : Number, arg2 : Number) => {
-    return this.foo * arg1 * arg2
-}
-
 singleton None
 
 union Option = <A> A #Some | None
+
+val some = <A> (a : A) -> Option<A> => a #Some
+
+val none = <A> () -> Option<A> => None #None
 
 val Option:map = <A> (
     this : Option<A>
@@ -37,37 +15,7 @@ val Option:map = <A> (
     case None => None # None
 }
 
-typealias Pred = <A> (a : A) -> Boolean
-
-val foo = (oa : Option<Number>) => match oa {
-    case Some => untag oa
-    case None => 123
-}
-
-val foo2 = (pred : Pred<Number>) -> Boolean =>
-    pred(0)
-
-val foo3 = (pred : Pred) -> Boolean =>
-    pred<Number>(1) and pred<Boolean>(false)
-
-val foo4 = <A> (oa : Option<A>) => 0
-
-val foo5 = (on : Option<Number>) => foo4(on)
-
 val main = () => {
-    // return bar2({
-    //     foo1 = 10,
-    //     foo2 = false
-    // } # Foo)
-
-    val myObj1 = MyClass1:new({
-        foo = 3,
-        bar = 2,
-        baz = true
-    })
-
-    // return (456 #Some)
-    //    :Option:map((n : Number) => n * 2)
-
-    return 1234
+    return none<Number>()
+        :Option:map((n : Number) => n * 2)
 }

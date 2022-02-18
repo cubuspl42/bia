@@ -870,6 +870,63 @@ internal class TypeCheckingTest {
             actual = callExpression.type,
         )
     }
+
+    @Test
+    fun testInferredGenericPartialCall() {
+        val returnFunctionType = FunctionType(
+            typeArguments = listOf(
+                TypeVariable(givenName = "B", id = 0),
+            ),
+            argumentListDeclaration = BasicArgumentListDeclaration(
+                argumentDeclarations = listOf(
+                    ArgumentDeclaration(
+                        givenName = "b",
+                        TypeVariable(givenName = "B", id = 0),
+                    ),
+                )
+            ),
+            returnType = NumberType,
+        )
+
+        val callExpression = CallExpressionB(
+            callee = ReferenceExpressionB(
+                referredName = "foo",
+            ),
+            explicitTypeArguments = null,
+            arguments = listOf(
+                IntLiteralExpression(value = 0),
+            ),
+        ).build(
+            scope = StaticScope.empty
+                .extendClosed(
+                    name = "foo",
+                    declaration = ArgumentDeclaration(
+                        givenName = "foo",
+                        valueType = FunctionType(
+                            typeArguments = listOf(
+                                TypeVariable(givenName = "A", id = 0),
+                            ),
+                            argumentListDeclaration = BasicArgumentListDeclaration(
+                                argumentDeclarations = listOf(
+                                    ArgumentDeclaration(
+                                        givenName = "a",
+                                        TypeVariable(givenName = "A", id = 0),
+                                    ),
+                                )
+                            ),
+                            returnType = returnFunctionType,
+                        ),
+                    ),
+                )
+        )
+
+        callExpression.validate()
+
+        assertEquals(
+            expected = returnFunctionType,
+            actual = callExpression.type,
+        )
+    }
 }
 
 private fun argumentDeclaration(
