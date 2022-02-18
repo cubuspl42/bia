@@ -63,8 +63,14 @@ data class TypeReference(
 }
 
 data class TypeVariableMapping(
-    private val mapping: Map<TypeVariable, Type>,
+    val mapping: Map<TypeVariable, Type>,
 ) {
+    companion object {
+        val empty = TypeVariableMapping(
+            mapping = emptyMap(),
+        )
+    }
+
     fun getMappedType(variable: TypeVariable): Type? =
         mapping[variable]
 }

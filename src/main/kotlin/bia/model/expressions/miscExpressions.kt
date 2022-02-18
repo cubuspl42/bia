@@ -122,14 +122,6 @@ data class CallExpression(
     }
 }
 
-fun inferTypeVariableMappingForArgument(
-    typeArguments: Set<TypeVariable>,
-    argumentType: Type,
-    passedArgumentType: Type,
-): TypeVariableMapping {
-
-}
-
 fun buildTypeVariableMapping(
     typeArguments: List<TypeVariable>,
     passedTypeArguments: List<Type>,

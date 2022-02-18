@@ -734,7 +734,7 @@ internal class TypeCheckingTest {
             element = ClosedDeclaration(singletonDeclaration),
         )
     }
-    
+
     @Test
     fun testBasicCall() {
         val callExpression = CallExpressionB(
