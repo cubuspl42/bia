@@ -215,7 +215,7 @@ fun transformArgumentListDeclarations(
         argumentDeclarations = ctx.argumentDeclaration().map {
             ArgumentDeclarationB(
                 givenName = it.name.text,
-                valueType = transformTypeExpression(
+                argumentType = transformTypeExpression(
                     typeExpression = it.typeExpression(),
                 ),
             )

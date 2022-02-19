@@ -6,6 +6,7 @@ import bia.model.UnionType
 import bia.model.expressions.Expression
 import bia.model.expressions.IsExpression
 import bia.model.expressions.ReferenceExpression
+import bia.model.valueType
 import bia.parser.StaticScope
 
 fun processGuardSmartCast(
@@ -29,7 +30,7 @@ fun processGuardSmartCast(
                         name = declaration.givenName,
                         declaration = SmartCastDeclaration(
                             givenName = declaration.givenName,
-                            valueType = NarrowUnionType(
+                            castedType = NarrowUnionType(
                                 alternatives = valueType.alternatives,
                                 narrowedAlternative = checkedAlternative,
                             ),

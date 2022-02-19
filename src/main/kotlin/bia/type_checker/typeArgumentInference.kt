@@ -26,7 +26,7 @@ fun inferTypeVariableMappingForCall(
     val argumentListMapping = when (argumentList) {
         is BasicArgumentListDeclaration -> inferTypeVariableMappingForBasicCall(
             typeArguments = typeArguments,
-            argumentTypes = argumentList.argumentDeclarations.map { it.valueType },
+            argumentTypes = argumentList.argumentDeclarations.map { it.argumentType },
             passedTypes = passedTypes,
         )
         is VarargArgumentListDeclaration -> inferTypeVariableMappingForVarargCall(
@@ -274,8 +274,8 @@ private fun inferTypeVariableMappingForBasicArgumentListDeclaration(
 
         val argumentMapping = inferTypeVariableMappingForPair(
             typeArguments = typeArguments,
-            matchee = argument.valueType,
-            matcher = matcherArgument.valueType,
+            matchee = argument.argumentType,
+            matcher = matcherArgument.argumentType,
         )
 
         combineTypeVariableMappings(

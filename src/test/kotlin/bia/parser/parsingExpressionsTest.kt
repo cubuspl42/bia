@@ -126,7 +126,7 @@ internal class ParsingExpressionsTest {
     fun parseTag() {
         assertEquals(
             expected = TagExpression(
-                expression = ReferenceExpression(
+                taggedExpression = ReferenceExpression(
                     referredName = "foo",
                     referredDeclaration = null,
                 ),
@@ -257,11 +257,11 @@ internal class ParsingExpressionsTest {
                     argumentDeclarations = listOf(
                         ArgumentDeclarationB(
                             givenName = "arg1",
-                            valueType = NumberType,
+                            argumentType = NumberType,
                         ),
                         ArgumentDeclarationB(
                             givenName = "arg2",
-                            valueType = BooleanType,
+                            argumentType = BooleanType,
                         ),
                     ),
                 ),

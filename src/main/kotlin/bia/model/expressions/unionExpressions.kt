@@ -18,19 +18,25 @@ import bia.model.buildType
 import bia.model.isAssignableTo
 import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
+import kotlin.math.exp
 
 data class TagExpression(
-    val expression: Expression,
+    val taggedExpression: Expression,
     val attachedTagName: String,
 ) : Expression {
-    override val type: Type
-        get() = TaggedType(
-            taggedType = expression.type,
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(expression = this)
+
+        val taggedType = taggedExpression.determineType(context = extendedContext)
+
+        return TaggedType(
+            taggedType = taggedType,
             attachedTagName = attachedTagName,
         )
+    }
 
     override fun evaluate(scope: DynamicScope): Value = TaggedValue(
-        taggedValue = expression.evaluate(scope = scope),
+        taggedValue = taggedExpression.evaluate(scope = scope),
         tag = attachedTagName,
     )
 }
@@ -40,7 +46,7 @@ data class TagExpressionB(
     val attachedTagName: String,
 ) : ExpressionB {
     override fun build(scope: StaticScope): Expression = TagExpression(
-        expression = tagee.build(scope = scope),
+        taggedExpression = tagee.build(scope = scope),
         attachedTagName = attachedTagName,
     )
 }
@@ -62,7 +68,8 @@ data class IsExpression(
         checkedUnionAlternative
     }
 
-    override val type = BooleanType
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        BooleanType
 
     override fun evaluate(scope: DynamicScope): Value {
         val taggedValue = checkee.evaluate(scope = scope).asTaggedValue()
@@ -102,16 +109,24 @@ data class MatchExpression(
             ?: throw TypeCheckError("Tried to match an expression of non-union type")
     }
 
-    override val type: Type by lazy {
-        explicitType ?: run {
-            val firstBranch = allBranches.first()
-            val differingBranch = allBranches.firstOrNull { it.type != firstBranch.type }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(expression = this)
 
-            if (differingBranch != null) {
-                throw TypeCheckError("Not all branches of a match expression have same types (e.g. ${differingBranch.type.toPrettyString()} is not ${firstBranch.type.toPrettyString()})")
+        return explicitType ?: run {
+            val firstBranch = allBranches.first()
+            val firstBranchType = firstBranch.determineType(context = extendedContext)
+
+            val differingBranchType = allBranches.firstNotNullOfOrNull {
+                val branchType = it.determineType(context = extendedContext)
+
+                branchType.takeIf { it != firstBranchType }
             }
 
-            firstBranch.type
+            if (differingBranchType != null) {
+                throw TypeCheckError("Not all branches of a match expression have same types (e.g. ${differingBranchType.toPrettyString()} is not ${firstBranchType.toPrettyString()})")
+            }
+
+            firstBranchType
         }
     }
 
@@ -207,7 +222,7 @@ data class MatchExpressionB(
                 name = referredDeclaration.givenName,
                 declaration = SmartCastDeclaration(
                     givenName = referredDeclaration.givenName,
-                    valueType = NarrowUnionType(
+                    castedType = NarrowUnionType(
                         alternatives = matcheeUnionType.alternatives,
                         narrowedAlternative = checkedAlternative,
                     ),
@@ -233,12 +248,22 @@ data class MatchExpressionB(
 data class UntagExpression(
     val untagee: Expression,
 ) : Expression {
-    private val expressionUnionType by lazy {
-        untagee.type as? NarrowUnionType
+    private fun determineExpressionUnionType(context: TypeDeterminationContext): NarrowUnionType {
+        val untageeType = untagee.determineType(context = context)
+
+        return untageeType as? NarrowUnionType
             ?: throw TypeCheckError("Tried to untag an expression of non-narrow-union type")
     }
 
-    override val type: Type by lazy { expressionUnionType.narrowedType }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(expression = this)
+
+        val expressionUnionType = determineExpressionUnionType(
+            context = extendedContext,
+        )
+
+        return expressionUnionType.narrowedType
+    }
 
     override fun evaluate(scope: DynamicScope): Value =
         untagee.evaluate(scope = scope).asTaggedValue().taggedValue

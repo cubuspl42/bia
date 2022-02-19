@@ -18,7 +18,8 @@ sealed class LiteralExpression : Expression, ExpressionB {
 data class IntLiteralExpression(
     val value: Long,
 ) : LiteralExpression() {
-    override val type: Type = NumberType
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        NumberType
 
     override fun evaluate(scope: DynamicScope): Value =
         NumberValue(
@@ -29,7 +30,8 @@ data class IntLiteralExpression(
 data class BooleanLiteralExpression(
     val value: Boolean,
 ) : LiteralExpression() {
-    override val type: Type = BooleanType
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        BooleanType
 
     override fun evaluate(scope: DynamicScope): Value =
         BooleanValue(
@@ -40,10 +42,12 @@ data class BooleanLiteralExpression(
 data class ObjectLiteralExpression(
     val entries: Map<String, Expression>,
 ) : LiteralExpression() {
-    override val type: Type by lazy {
-        ObjectType(
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(expression = this)
+
+        return ObjectType(
             entries = entries.mapValues { (_, expression) ->
-                expression.type
+                expression.determineType(context = extendedContext)
             },
         )
     }

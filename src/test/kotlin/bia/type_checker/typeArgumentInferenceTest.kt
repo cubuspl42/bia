@@ -32,11 +32,11 @@ internal class TypeArgumentInferenceTest {
                 argumentDeclarations = listOf(
                     ArgumentDeclaration(
                         givenName = "a",
-                        valueType = tvA,
+                        argumentType = tvA,
                     ),
                     ArgumentDeclaration(
                         givenName = "b",
-                        valueType = ObjectType(
+                        argumentType = ObjectType(
                             entries = mapOf(
                                 "foo" to tvB,
                                 "bar" to NumberType,
@@ -76,7 +76,7 @@ internal class TypeArgumentInferenceTest {
                     argumentDeclarations = listOf(
                         ArgumentDeclaration(
                             givenName = "a",
-                            valueType = tvA,
+                            argumentType = tvA,
                         ),
                     ),
                 ),
@@ -426,11 +426,11 @@ internal class TypeArgumentInferenceTest {
                     argumentDeclarations = listOf(
                         ArgumentDeclaration(
                             givenName = "a",
-                            valueType = tvA,
+                            argumentType = tvA,
                         ),
                         ArgumentDeclaration(
                             givenName = "n",
-                            valueType = NumberType,
+                            argumentType = NumberType,
                         ),
                     ),
                 ),
@@ -442,11 +442,11 @@ internal class TypeArgumentInferenceTest {
                     argumentDeclarations = listOf(
                         ArgumentDeclaration(
                             givenName = "a2",
-                            valueType = BooleanType,
+                            argumentType = BooleanType,
                         ),
                         ArgumentDeclaration(
                             givenName = "n2",
-                            valueType = NumberType,
+                            argumentType = NumberType,
                         ),
                     ),
                 ),

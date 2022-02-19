@@ -35,20 +35,15 @@ data class ReferenceExpression(
     val referredName: String,
     val referredDeclaration: ScopedDeclaration?,
 ) : Expression {
-    override val type: Type by lazy {
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
         val referredDeclaration =
             this.referredDeclaration ?: throw TypeCheckError("Unresolved reference ($referredName) has no type")
 
-        when (referredDeclaration) {
-            is ClosedDeclaration -> referredDeclaration.declaration.valueType
-            is OpenDeclaration -> {
-                // TODO: Remove the cast, it's a temporary hack. Make recursive val-functions work. Add tests for that.
-                val valueDefinition = referredDeclaration.valueDefinition as DefDeclaration
+        val extendedContext = context.withVisited(expression = this)
 
-                valueDefinition.explicitType
-                    ?: throw TypeCheckError("Recursively referenced function $referredName has no explicit return type")
-            }
-        }
+        return referredDeclaration.declaration.determineValueType(
+            context = extendedContext,
+        )
     }
 
     override fun evaluate(scope: DynamicScope): Value =
@@ -70,20 +65,24 @@ data class CallExpression(
     val explicitTypeArguments: List<Type>?,
     val passedArguments: List<Expression>,
 ) : Expression {
-    private val calleeType: FunctionType by lazy {
-        val calleeType = callee.type
-        calleeType as? FunctionType ?: throw TypeCheckError("Tried to call a non-function: $calleeType")
+    private fun determineCalleeType(context: TypeDeterminationContext): FunctionType {
+        val calleeType = callee.determineType(context = context)
+        return calleeType as? FunctionType ?: throw TypeCheckError("Tried to call a non-function: $calleeType")
     }
 
-    private val resolvedCalleeType: FunctionType by lazy {
-        if (calleeType.typeArguments.isNotEmpty()) {
+    private fun determineResolvedCalleeType(context: TypeDeterminationContext): FunctionType {
+        val calleeType = determineCalleeType(context = context)
+
+        return if (calleeType.typeArguments.isNotEmpty()) {
             val typeVariableMapping = if (explicitTypeArguments != null) buildTypeVariableMapping(
                 typeArguments = calleeType.typeArguments,
                 passedTypeArguments = explicitTypeArguments,
             ) else inferTypeVariableMappingForCall(
                 typeArguments = calleeType.typeArguments.toSet(),
                 argumentList = calleeType.argumentListDeclaration,
-                passedTypes = passedArguments.map { it.type },
+                passedTypes = passedArguments.map {
+                    it.determineType(context = context)
+                },
             )
 
             calleeType.resolveTypeVariables(
@@ -92,8 +91,20 @@ data class CallExpression(
         } else calleeType
     }
 
-    override val type: Type by lazy {
-        resolvedCalleeType.returnType
+    private val calleeType: FunctionType by lazy {
+        determineCalleeType(context = TypeDeterminationContext.empty)
+    }
+
+    private val resolvedCalleeType: FunctionType by lazy {
+        determineResolvedCalleeType(context = TypeDeterminationContext.empty)
+    }
+
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(this)
+
+        val resolvedCalleeType = determineResolvedCalleeType(context = extendedContext)
+
+        return resolvedCalleeType.returnType
     }
 
     override fun validate() {
@@ -181,11 +192,13 @@ data class IfExpression(
     val trueBranch: Expression,
     val falseBranch: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        val trueBranchType = trueBranch.type
-        val falseBranchType = falseBranch.type
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(expression = this)
 
-        if (trueBranchType == falseBranchType) {
+        val trueBranchType = trueBranch.determineType(context = extendedContext)
+        val falseBranchType = falseBranch.determineType(context = extendedContext)
+
+        return if (trueBranchType == falseBranchType) {
             trueBranchType
         } else {
             throw TypeCheckError("If expression has incompatible true- and false-branch types: " +
@@ -232,16 +245,20 @@ data class LambdaExpression(
     val explicitReturnType: Type?,
     val body: FunctionBody,
 ) : Expression {
-    override val type: Type by lazy {
-        FunctionType(
-            typeArguments = typeVariables,
-            argumentListDeclaration = argumentListDeclaration,
-            returnType = explicitReturnType ?: body.returned.type,
-        )
-    }
-
     private val argumentDeclarations by lazy {
         (argumentListDeclaration as BasicArgumentListDeclaration).argumentDeclarations
+    }
+
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(this)
+
+        return FunctionType(
+            typeArguments = typeVariables,
+            argumentListDeclaration = argumentListDeclaration,
+            returnType = explicitReturnType ?: body.returned.determineType(
+                context = extendedContext,
+            ),
+        )
     }
 
     override fun validate() {
@@ -297,13 +314,21 @@ data class ObjectFieldReadExpression(
     val objectExpression: Expression,
     val readFieldName: String,
 ) : Expression {
-    private val objectType by lazy {
-        objectExpression.type as? ObjectType
-            ?: throw TypeCheckError("Tried to read a field from a non-object: ${objectExpression.type.toPrettyString()}")
+    private fun determineObjectType(
+        context: TypeDeterminationContext,
+    ): ObjectType {
+        val objectExpressionType = objectExpression.determineType(context = context)
+
+        return objectExpressionType as? ObjectType
+            ?: throw TypeCheckError("Tried to read a field from a non-object: ${objectExpressionType.toPrettyString()}")
     }
 
-    override val type: Type by lazy {
-        objectType.entries[readFieldName]
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(expression = this)
+
+        val objectType = determineObjectType(context = extendedContext)
+
+        return objectType.entries[readFieldName]
             ?: throw TypeCheckError("Object with type ${objectType.toPrettyString()} does not have a field named $readFieldName")
     }
 

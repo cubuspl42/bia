@@ -1,6 +1,7 @@
 package bia.model
 
 import bia.model.expressions.Expression
+import bia.model.expressions.type
 import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
@@ -32,7 +33,7 @@ data class BasicArgumentListDeclaration(
 
             fun areArgumentsAssignable() = argumentDeclarations.zip(otherArgumentDeclarations)
                 .all { (argumentDeclaration, otherArgumentDeclaration) ->
-                    argumentDeclaration.valueType.isAssignableTo(otherArgumentDeclaration.valueType)
+                    argumentDeclaration.argumentType.isAssignableTo(otherArgumentDeclaration.argumentType)
                 }
 
             argumentDeclarations.size <= otherArgumentDeclarations.size && areArgumentsAssignable()
@@ -45,7 +46,7 @@ data class BasicArgumentListDeclaration(
 
     override fun resolveTypeVariables(mapping: TypeVariableMapping) = BasicArgumentListDeclaration(
         argumentDeclarations = argumentDeclarations.map {
-            it.copy(valueType = it.valueType.resolveTypeVariables(mapping = mapping))
+            it.copy(argumentType = it.argumentType.resolveTypeVariables(mapping = mapping))
         },
     )
 
@@ -78,10 +79,10 @@ data class BasicArgumentListDeclaration(
 
         arguments.zip(argumentDeclarations)
             .forEachIndexed { index, (argument, argumentDeclaration) ->
-                if (!argument.type.isAssignableTo(argumentDeclaration.valueType)) {
+                if (!argument.type.isAssignableTo(argumentDeclaration.argumentType)) {
                     throw TypeCheckError(
                         "Function $functionName argument #${index + 1} has type ${argument.type.toPrettyString()} " +
-                                "which can't be assigned to ${argumentDeclaration.valueType.toPrettyString()}",
+                                "which can't be assigned to ${argumentDeclaration.argumentType.toPrettyString()}",
                     )
                 }
             }
@@ -109,7 +110,7 @@ data class VarargArgumentListDeclaration(
                 val argumentDeclarations = other.argumentDeclarations
 
                 fun areArgumentsAssignable() = argumentDeclarations.all { argumentDeclaration ->
-                    argumentDeclaration.valueType.isAssignableTo(type)
+                    argumentDeclaration.argumentType.isAssignableTo(type)
                 }
 
                 areArgumentsAssignable()

@@ -110,12 +110,8 @@ fun Type.isAssignableTo(other: Type): Boolean =
     when {
         this == other -> true
         other is NullableType -> isAssignableTo(other.baseType)
-//        other is UnionType -> isAssignableToUnion(other)
         else -> isAssignableDirectlyTo(other)
     }
-
-//fun Type.isAssignableToUnion(union: UnionType): Boolean =
-//    union.alternatives.count { this.isAssignableTo(it.type) } == 1
 
 object NumberType : SpecificType, TypeExpressionB {
     override fun toPrettyString(): String = "Number"
@@ -292,33 +288,6 @@ data class ObjectTypeB(
         }
     )
 }
-
-//data class TypeConstructorB(
-//    val typeArguments: List<TypeVariableB>,
-//    val typeStructure: TypeExpressionB,
-//) : TypeExpressionB {
-//    override fun build(scope: StaticScope): TypeAlike {
-//        val builtTypeVariables = buildTypeVariables(
-//            scope = scope,
-//            typeVariables = typeArguments,
-//        )
-//
-//        return when (typeStructure) {
-//            is FunctionTypeB -> typeStructure.build(
-//                scope = builtTypeVariables.extendedScope,
-//            ).copy(
-//                typeArguments = builtTypeVariables.typeVariables,
-//            )
-//            is ObjectTypeB -> ObjectTypeConstructor(
-//                typeArguments = builtTypeVariables.typeVariables,
-//                typeStructure = typeStructure.build(
-//                    scope = builtTypeVariables.extendedScope,
-//                )
-//            )
-//            else -> throw TypeCheckError("Only function and object types can have type arguments")
-//        }
-//    }
-//}
 
 data class ObjectTypeConstructor(
     override val typeArguments: List<TypeVariable>,

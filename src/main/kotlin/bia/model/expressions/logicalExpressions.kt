@@ -15,11 +15,14 @@ data class LessThenExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (left.type !is NumberType || right.type !is NumberType) {
-            throw TypeCheckError("Tried compare (<) expressions of type ${left.type} and ${right.type}")
-        } else BooleanType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForLogicalBinaryExpression(
+            expression = this,
+            context = context,
+            left = left,
+            right = right,
+            errorMessage = { l, r -> "Tried compare (<) expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberLogicalExpression(
@@ -43,11 +46,14 @@ data class GreaterThenExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (left.type !is NumberType || right.type !is NumberType) {
-            throw TypeCheckError("Tried compare (>) expressions of type ${left.type} and ${right.type}")
-        } else BooleanType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForLogicalBinaryExpression(
+            expression = this,
+            context = context,
+            left = left,
+            right = right,
+            errorMessage = { l, r -> "Tried compare (>) expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberLogicalExpression(
@@ -71,11 +77,14 @@ data class OrExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (left.type !is BooleanType || right.type !is BooleanType) {
-            throw TypeCheckError("Tried to perform logical operation (or) on expressions of type ${left.type} and ${right.type}")
-        } else BooleanType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForLogicalBinaryExpression(
+            expression = this,
+            context = context,
+            left = left,
+            right = right,
+            errorMessage = { l, r -> "Tried to perform logical operation (or) on expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateLogicalBinaryExpression(
@@ -99,11 +108,14 @@ data class AndExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (left.type !is BooleanType || right.type !is BooleanType) {
-            throw TypeCheckError("Tried to perform logical operation (and) on expressions of type ${left.type} and ${right.type}")
-        } else BooleanType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForLogicalBinaryExpression(
+            expression = this,
+            context = context,
+            left = left,
+            right = right,
+            errorMessage = { l, r -> "Tried to perform logical operation (and) on expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateLogicalBinaryExpression(
@@ -126,9 +138,13 @@ data class AndExpressionB(
 data class NotExpression(
     val negated: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (negated.type !is BooleanType) {
-            throw TypeCheckError("Tried to perform logical operation (not) on expression of type ${negated.type}")
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(expression = this)
+
+        val negatedType = negated.determineType(context = extendedContext)
+
+        return if (negatedType !is BooleanType) {
+            throw TypeCheckError("Tried to perform logical operation (not) on expression of type ${negatedType.toPrettyString()}")
         } else BooleanType
     }
 
@@ -153,9 +169,14 @@ data class EqualsExpression(
     val left: Expression,
     val right: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (left.type != right.type) {
-            throw TypeCheckError("Tried to compare expressions of type ${left.type} and ${right.type}")
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type {
+        val extendedContext = context.withVisited(expression = this)
+
+        val leftType = left.determineType(context = extendedContext)
+        val rightType = right.determineType(context = extendedContext)
+
+        return if (leftType != rightType) {
+            throw TypeCheckError("Tried to compare expressions of type ${leftType.toPrettyString()} and ${rightType.toPrettyString()}")
         } else BooleanType
     }
 
@@ -191,6 +212,28 @@ private fun evaluateNumberLogicalExpression(
     return BooleanValue(
         value = calculate(leftNumber.value, rightNumber.value),
     )
+}
+
+private fun determineTypeDirectlyForLogicalBinaryExpression(
+    expression: Expression,
+    context: TypeDeterminationContext,
+    left: Expression,
+    right: Expression,
+    errorMessage: (leftType: String, rightType: String) -> String,
+): Type {
+    val extendedContext = context.withVisited(expression = expression)
+
+    val leftType = left.determineType(context = extendedContext)
+    val rightType = right.determineType(context = extendedContext)
+
+    return if (leftType !is BooleanType || rightType !is BooleanType) {
+        throw TypeCheckError(
+            message = errorMessage(
+                leftType.toPrettyString(),
+                rightType.toPrettyString(),
+            ),
+        )
+    } else NumberType
 }
 
 private fun evaluateLogicalBinaryExpression(

@@ -13,11 +13,14 @@ data class AdditionExpression(
     val augend: Expression,
     val addend: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (augend.type !is NumberType || addend.type !is NumberType) {
-            throw TypeCheckError("Tried to add expressions of type ${augend.type} and ${addend.type}")
-        } else NumberType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForNumberBinaryExpression(
+            expression = this,
+            context = context,
+            left = augend,
+            right = addend,
+            errorMessage = { l, r -> "Tried to add expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
@@ -41,11 +44,14 @@ data class SubtractionExpression(
     val minuend: Expression,
     val subtrahend: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (minuend.type !is NumberType || subtrahend.type !is NumberType) {
-            throw TypeCheckError("Tried to subtract expressions of type ${minuend.type} and ${subtrahend.type}")
-        } else NumberType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForNumberBinaryExpression(
+            expression = this,
+            context = context,
+            left = minuend,
+            right = subtrahend,
+            errorMessage = { l, r -> "Tried to subtract expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
@@ -69,11 +75,14 @@ data class MultiplicationExpression(
     val multiplier: Expression,
     val multiplicand: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (multiplier.type !is NumberType || multiplicand.type !is NumberType) {
-            throw TypeCheckError("Tried to multiply expressions of type ${multiplier.type} and ${multiplicand.type}")
-        } else NumberType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForNumberBinaryExpression(
+            expression = this,
+            context = context,
+            left = multiplier,
+            right = multiplicand,
+            errorMessage = { l, r -> "Tried to multiply expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
@@ -97,11 +106,14 @@ data class DivisionExpression(
     val dividend: Expression,
     val divisor: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (dividend.type !is NumberType || divisor.type !is NumberType) {
-            throw TypeCheckError("Tried to divide expressions of type ${dividend.type} and ${divisor.type}")
-        } else NumberType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForNumberBinaryExpression(
+            expression = this,
+            context = context,
+            left = dividend,
+            right = divisor,
+            errorMessage = { l, r -> "Tried to divide expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
@@ -125,11 +137,14 @@ data class IntegerDivisionExpression(
     val dividend: Expression,
     val divisor: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (dividend.type !is NumberType || divisor.type !is NumberType) {
-            throw TypeCheckError("Tried to integer-divide expressions of type ${dividend.type} and ${divisor.type}")
-        } else NumberType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForNumberBinaryExpression(
+            expression = this,
+            context = context,
+            left = dividend,
+            right = divisor,
+            errorMessage = { l, r -> "Tried to integer-divide expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
@@ -153,11 +168,14 @@ data class ReminderExpression(
     val dividend: Expression,
     val divisor: Expression,
 ) : Expression {
-    override val type: Type by lazy {
-        if (dividend.type !is NumberType || divisor.type !is NumberType) {
-            throw TypeCheckError("Tried reminder-divide expressions of type ${dividend.type} and ${divisor.type}")
-        } else NumberType
-    }
+    override fun determineTypeDirectly(context: TypeDeterminationContext): Type =
+        determineTypeDirectlyForNumberBinaryExpression(
+            expression = this,
+            context = context,
+            left = dividend,
+            right = divisor,
+            errorMessage = { l, r -> "Tried to reminder-divide expressions of type $l and $r" },
+        )
 
     override fun evaluate(scope: DynamicScope): Value =
         evaluateNumberBinaryExpression(
@@ -175,6 +193,23 @@ data class ReminderExpressionB(
         dividend = dividend.build(scope = scope),
         divisor = divisor.build(scope = scope),
     )
+}
+
+private fun determineTypeDirectlyForNumberBinaryExpression(
+    expression: Expression,
+    context: TypeDeterminationContext,
+    left: Expression,
+    right: Expression,
+    errorMessage: (leftType: Type, rightType: Type) -> String,
+): Type {
+    val extendedContext = context.withVisited(expression = expression)
+
+    val leftType = left.determineType(context = extendedContext)
+    val rightType = right.determineType(context = extendedContext)
+
+    return if (leftType !is NumberType || rightType !is NumberType) {
+        throw TypeCheckError(message = errorMessage(leftType, rightType))
+    } else NumberType
 }
 
 private fun evaluateNumberBinaryExpression(

@@ -45,7 +45,9 @@ import bia.model.expressions.ReferenceExpression
 import bia.model.expressions.ReferenceExpressionB
 import bia.model.expressions.UntagExpression
 import bia.model.expressions.UntagExpressionB
+import bia.model.expressions.type
 import bia.model.isAssignableTo
+import bia.model.valueType
 import bia.parser.ClosedDeclaration
 import bia.parser.ScopedDeclaration
 import bia.parser.StaticScope
@@ -85,7 +87,7 @@ internal class TypeCheckingTest {
 
         val argumentDeclaration = ArgumentDeclaration(
             givenName = "arg1",
-            valueType = unionType,
+            argumentType = unionType,
         )
 
         val argumentReference = ReferenceExpression(
@@ -98,7 +100,7 @@ internal class TypeCheckingTest {
             referredDeclaration = ClosedDeclaration(
                 SmartCastDeclaration(
                     givenName = "arg1",
-                    valueType = NarrowUnionType(
+                    castedType = NarrowUnionType(
                         alternatives = unionType.alternatives,
                         narrowedAlternative = alternative1,
                     )
@@ -368,7 +370,7 @@ internal class TypeCheckingTest {
                 argumentDeclarations = listOf(
                     ArgumentDeclarationB(
                         givenName = "a",
-                        valueType = TypeReference(referredName = "A"),
+                        argumentType = TypeReference(referredName = "A"),
                     ),
                 ),
             ),
@@ -417,7 +419,7 @@ internal class TypeCheckingTest {
                 argumentDeclarations = listOf(
                     ArgumentDeclarationB(
                         givenName = "a",
-                        valueType = TypeReference(referredName = "A"),
+                        argumentType = TypeReference(referredName = "A"),
                     ),
                 ),
             ),
@@ -443,7 +445,7 @@ internal class TypeCheckingTest {
                     argumentDeclarations = listOf(
                         ArgumentDeclaration(
                             givenName = "a",
-                            valueType = typeVariable,
+                            argumentType = typeVariable,
                         ),
                     ),
                 ),
@@ -455,7 +457,7 @@ internal class TypeCheckingTest {
                         referredDeclaration = ClosedDeclaration(
                             declaration = ArgumentDeclaration(
                                 givenName = "a",
-                                valueType = typeVariable,
+                                argumentType = typeVariable,
                             ),
                         ),
                     ),
@@ -473,7 +475,7 @@ internal class TypeCheckingTest {
                     argumentDeclarations = listOf(
                         ArgumentDeclaration(
                             givenName = "a",
-                            valueType = typeVariable,
+                            argumentType = typeVariable,
                         ),
                     ),
                 ),
@@ -685,7 +687,7 @@ internal class TypeCheckingTest {
         assertThrows<TypeCheckError> {
             ArgumentDeclarationB(
                 givenName = "foo",
-                valueType = TypeReference(
+                argumentType = TypeReference(
                     "Foo",
                 ),
             ).build(
@@ -724,7 +726,7 @@ internal class TypeCheckingTest {
         assertEquals(
             expected = SingletonDeclaration(
                 givenName = "Foo",
-                valueType = SingletonType(
+                singletonType = SingletonType(
                     singletonName = "Foo",
                 ),
             ),
@@ -752,13 +754,13 @@ internal class TypeCheckingTest {
                 name = "foo",
                 declaration = ArgumentDeclaration(
                     givenName = "foo",
-                    valueType = FunctionType(
+                    argumentType = FunctionType(
                         typeArguments = emptyList(),
                         argumentListDeclaration = BasicArgumentListDeclaration(
                             argumentDeclarations = listOf(
                                 ArgumentDeclaration(
                                     givenName = "a",
-                                    valueType = NumberType,
+                                    argumentType = NumberType,
                                 ),
                             )
                         ),
@@ -795,7 +797,7 @@ internal class TypeCheckingTest {
                 name = "foo",
                 declaration = ArgumentDeclaration(
                     givenName = "foo",
-                    valueType = FunctionType(
+                    argumentType = FunctionType(
                         typeArguments = listOf(
                             TypeVariable(givenName = "A", id = 0),
                             TypeVariable(givenName = "B", id = 0),
@@ -842,7 +844,7 @@ internal class TypeCheckingTest {
                 name = "foo",
                 declaration = ArgumentDeclaration(
                     givenName = "foo",
-                    valueType = FunctionType(
+                    argumentType = FunctionType(
                         typeArguments = listOf(
                             TypeVariable(givenName = "A", id = 0),
                             TypeVariable(givenName = "B", id = 0),
@@ -904,7 +906,7 @@ internal class TypeCheckingTest {
                     name = "foo",
                     declaration = ArgumentDeclaration(
                         givenName = "foo",
-                        valueType = FunctionType(
+                        argumentType = FunctionType(
                             typeArguments = listOf(
                                 TypeVariable(givenName = "A", id = 0),
                             ),
@@ -965,7 +967,7 @@ private fun argumentDeclaration(
 ): Pair<String, ScopedDeclaration> = givenName to ClosedDeclaration(
     declaration = ArgumentDeclaration(
         givenName = givenName,
-        valueType = valueType,
+        argumentType = valueType,
     )
 )
 
@@ -977,7 +979,7 @@ private fun argumentReference(
     referredDeclaration = ClosedDeclaration(
         declaration = ArgumentDeclaration(
             givenName = referredName,
-            valueType = valueType,
+            argumentType = valueType,
         ),
     ),
 )

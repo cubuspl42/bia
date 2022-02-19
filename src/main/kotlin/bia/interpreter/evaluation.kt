@@ -84,6 +84,23 @@ fun executeValueDeclaration(
     ),
 )
 
+// TODO
+
+// fun executeValueDeclaration(
+//    scope: DynamicScope,
+//    declaration: ValDeclaration,
+//): DynamicScope = object {
+//    val extendedScope: DynamicScope by lazy {
+//        scope.extend(
+//            name = declaration.givenName,
+//            value = evaluateExpression(
+//                scope = extendedScope,
+//                expression = declaration.initializer,
+//            ),
+//        )
+//    }
+//}.extendedScope
+
 private fun executeFunctionDeclaration(
     scope: DynamicScope,
     declaration: DefDeclaration,

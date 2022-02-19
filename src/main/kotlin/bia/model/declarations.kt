@@ -2,6 +2,9 @@ package bia.model
 
 import bia.model.expressions.Expression
 import bia.model.expressions.ExpressionB
+import bia.model.expressions.TypeDeterminationContext
+import bia.model.expressions.determineType
+import bia.model.expressions.type
 import bia.parser.StaticScope
 import bia.type_checker.TypeCheckError
 
@@ -20,8 +23,14 @@ interface TopLevelDeclarationB {
 
 sealed interface ValueDeclaration {
     val givenName: String
-    val valueType: Type
+
+    fun determineValueType(
+        context: TypeDeterminationContext,
+    ): Type
 }
+
+val ValueDeclaration.valueType: Any
+    get() = determineValueType(context = TypeDeterminationContext.empty)
 
 sealed interface ValueDefinition : ValueDeclaration, TopLevelDeclaration
 
@@ -40,9 +49,10 @@ class ValDeclaration(
 ) : ValueDefinition {
     val initializer by lazy { buildInitializer() }
 
-    override val valueType: Type by lazy {
-        initializer.type
-    }
+    override fun determineValueType(context: TypeDeterminationContext): Type =
+        initializer.determineType(
+            context = context,
+        )
 
     override fun validate() {
         initializer.validate()
@@ -102,7 +112,7 @@ data class DefDeclaration(
 
     val body: FunctionBody? by lazy { definition?.body }
 
-    val explicitType: FunctionType? = explicitReturnType?.let {
+    private val explicitType: FunctionType? = explicitReturnType?.let {
         FunctionType(
             typeArguments = typeVariables,
             argumentListDeclaration = argumentListDeclaration,
@@ -110,11 +120,14 @@ data class DefDeclaration(
         )
     }
 
-    override val valueType: FunctionType by lazy {
-        val returnType = explicitReturnType ?: body?.returned?.type
-        ?: throw RuntimeException("Could not determine function return type")
+    override fun determineValueType(context: TypeDeterminationContext): Type {
+        fun inferReturnType() =
+            body?.returned?.determineType(context = context)
+                ?: throw TypeCheckError("Could not infer return type for a function without body ")
 
-        explicitType ?: FunctionType(
+        val returnType = explicitReturnType ?: inferReturnType()
+
+        return explicitType ?: FunctionType(
             typeArguments = typeVariables,
             argumentListDeclaration = argumentListDeclaration,
             returnType = returnType,
@@ -266,26 +279,32 @@ fun validateFunction(
 
 data class ArgumentDeclaration(
     override val givenName: String,
-    override val valueType: Type,
+    val argumentType: Type,
 ) : ValueDeclaration {
     fun toPrettyString(): String =
-        "$givenName : ${valueType.toPrettyString()}"
+        "$givenName : ${argumentType.toPrettyString()}"
+
+    override fun determineValueType(context: TypeDeterminationContext): Type =
+        argumentType
 }
 
 data class ArgumentDeclarationB(
     val givenName: String,
-    val valueType: TypeExpressionB,
+    val argumentType: TypeExpressionB,
 ) {
     fun build(scope: StaticScope) = ArgumentDeclaration(
         givenName = givenName,
-        valueType = valueType.buildType(scope = scope),
+        argumentType = argumentType.buildType(scope = scope),
     )
 }
 
 data class SmartCastDeclaration(
     override val givenName: String,
-    override val valueType: Type,
-) : ValueDeclaration
+    val castedType: Type,
+) : ValueDeclaration {
+    override fun determineValueType(context: TypeDeterminationContext): Type =
+        castedType
+}
 
 data class FunctionDefinition(
     val body: FunctionBody,
@@ -352,10 +371,6 @@ data class TypeAliasDeclaration(
     override fun validate() {
     }
 }
-
-//sealed interface TypeAliasable {
-//     fun buildTypeAlike(scope: StaticScope): TypeAlike
-//}
 
 data class TypeAliasDeclarationB(
     val aliasName: String,
@@ -478,10 +493,13 @@ data class UnionDeclarationB(
 
 data class SingletonDeclaration(
     override val givenName: String,
-    override val valueType: SingletonType,
+    val singletonType: SingletonType,
 ) : ValueDeclaration, TopLevelDeclaration {
     override fun validate() {
     }
+
+    override fun determineValueType(context: TypeDeterminationContext): Type =
+        singletonType
 }
 
 data class SingletonDeclarationB(
@@ -502,7 +520,7 @@ data class SingletonDeclarationB(
 
         val singletonDeclaration = SingletonDeclaration(
             givenName = singletonName,
-            valueType = singletonType,
+            singletonType = singletonType,
         )
 
         return Built(

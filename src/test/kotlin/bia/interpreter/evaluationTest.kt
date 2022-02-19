@@ -22,7 +22,7 @@ internal class EvaluationTest {
             expected = NumberValue(123.0),
             actual = UntagExpression(
                 untagee = TagExpression(
-                    expression = taggedExpression,
+                    taggedExpression = taggedExpression,
                     attachedTagName = "Foo",
                 ),
             ).evaluate(scope = DynamicScope.empty),

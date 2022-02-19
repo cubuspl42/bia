@@ -15,7 +15,7 @@ abstract class DynamicScope {
         val empty: DynamicScope = of(values = emptyMap())
     }
 
-    abstract val values: Map<String, Value>
+    protected abstract val values: Map<String, Value>
 
     fun extend(name: String, value: Value) = DynamicScope.of(
         values = values + (name to value)
